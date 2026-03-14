@@ -1,0 +1,1 @@
+ALTER TABLE "plans" ADD COLUMN "popular" boolean DEFAULT false NOT NULL;

@@ -1,0 +1,365 @@
+'use client';
+
+import * as React from 'react';
+import { Combobox as BaseCombobox } from '@base-ui/react/combobox';
+import { cn } from '@/lib/utils.ts';
+import { Chip } from './chip';
+import { cva, type VariantProps } from 'class-variance-authority';
+
+export function Combobox({
+  ...props
+}: React.ComponentProps<typeof BaseCombobox.Root>) {
+  return <BaseCombobox.Root data-slot="combobox" {...props} />;
+}
+
+export const comboboxTriggerVariants = cva(
+  [
+    'px-2.5 w-full bg-input rounded placeholder:text-dimmed transition-[color,box-shadow]',
+    'focus:outline-0 focus:ring-primary focus:ring-2',
+    'has-focus:ring-primary has-focus:ring-2',
+    'flex items-center gap-2.5 cursor-pointer',
+    'data-disabled:cursor-not-allowed data-disabled:opacity-70',
+  ],
+  {
+    variants: {
+      variant: {
+        default:
+          'bg-input ring ring-input-border hover:not-[[data-disabled]]:not-[:focus]:ring-input-accent-border shadow-input',
+        subtle:
+          'bg-input/60 ring ring-input-border hover:not-[[data-disabled]]:not-[:focus]:ring-input-accent-border shadow-input',
+        plain: 'bg-transparent hover:not-[[data-disabled]]:bg-accent',
+      },
+      pill: {
+        true: 'rounded-full',
+      },
+    },
+    defaultVariants: {
+      variant: 'default',
+      pill: false,
+    },
+  },
+);
+
+export function ComboboxTrigger({
+  className,
+  children,
+  variant,
+  ...props
+}: React.ComponentProps<typeof BaseCombobox.Trigger> &
+  VariantProps<typeof comboboxTriggerVariants>) {
+  return (
+    <BaseCombobox.Trigger
+      data-slot="combobox-trigger"
+      {...props}
+      role="combobox"
+      className={cn('h-9.5', comboboxTriggerVariants({ variant, className }))}
+    >
+      {children}
+      <BaseCombobox.Icon className="text-muted ml-auto">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="w-4"
+        >
+          <path d="m6 9 6 6 6-6" />
+        </svg>
+      </BaseCombobox.Icon>
+    </BaseCombobox.Trigger>
+  );
+}
+
+export type ComboboxItem = {
+  value: string;
+  label: string;
+  icon?: React.ReactNode;
+};
+
+export function ComboboxValue({
+  placeholder = 'Select an option',
+  ...props
+}: React.ComponentProps<typeof BaseCombobox.Value> & {
+  placeholder?: string;
+}) {
+  return (
+    <BaseCombobox.Value data-slot="combobox-value" {...props}>
+      {(value: string | ComboboxItem) => (
+        <ComboboxRenderValue value={value} placeholder={placeholder} />
+      )}
+    </BaseCombobox.Value>
+  );
+}
+
+function ComboboxRenderValue({
+  value,
+  placeholder,
+}: {
+  value: string | ComboboxItem;
+  placeholder: string;
+}) {
+  if (!value) {
+    return <span className="text-dimmed">{placeholder}</span>;
+  }
+
+  if (typeof value === 'object') {
+    return (
+      <div className="flex items-center gap-2.5 [&_svg:not([class*=size-])]:size-4 [&_svg:not([class*=text-])]:text-popover-foreground">
+        {value.icon}
+        <span className="text-popover-foreground">{value.label}</span>
+      </div>
+    );
+  }
+
+  return <span className="text-popover-foreground">{value}</span>;
+}
+
+export function ComboboxInput({
+  className,
+  placeholder,
+  variant,
+  pill,
+  ref,
+}: VariantProps<typeof comboboxTriggerVariants> & {
+  placeholder: string;
+  className?: string;
+  ref?: React.RefObject<HTMLDivElement | null>;
+}) {
+  return (
+    <BaseCombobox.Chips
+      data-slot="combobox-chips"
+      role="combobox"
+      className={cn(
+        comboboxTriggerVariants({ variant, pill, className }),
+        'min-h-9.5 py-1 flex items-center flex-wrap gap-1.5',
+      )}
+      ref={ref}
+    >
+      <BaseCombobox.Value>
+        {(value: ComboboxItem[]) => (
+          <React.Fragment>
+            {value.map((item) => (
+              <BaseCombobox.Chip
+                key={item.value}
+                render={<Chip />}
+                className={cn(
+                  'focus-visible:outline-none focus-visible:bg-primary focus-visible:text-primary-foreground',
+                  'focus-visible:ring-primary',
+                )}
+              >
+                {item.label}
+                <BaseCombobox.ChipRemove>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="size-3.5 opacity-60 hover:opacity-100 transition-colors"
+                  >
+                    <path d="M18 6 6 18" />
+                    <path d="m6 6 12 12" />
+                  </svg>
+                </BaseCombobox.ChipRemove>
+              </BaseCombobox.Chip>
+            ))}
+            <BaseCombobox.Input
+              placeholder={value.length === 0 ? placeholder : ''}
+              className={cn('min-w-4 flex-1 outline-none')}
+            />
+          </React.Fragment>
+        )}
+      </BaseCombobox.Value>
+    </BaseCombobox.Chips>
+  );
+}
+
+export function ComboboxPopup({
+  className,
+  children,
+  align,
+  alignOffset,
+  side,
+  sideOffset,
+  anchor,
+  sticky,
+  positionMethod,
+  ...props
+}: React.ComponentProps<typeof BaseCombobox.Popup> & {
+  align?: BaseCombobox.Positioner.Props['align'];
+  alignOffset?: BaseCombobox.Positioner.Props['alignOffset'];
+  side?: BaseCombobox.Positioner.Props['side'];
+  sideOffset?: BaseCombobox.Positioner.Props['sideOffset'];
+  anchor?: BaseCombobox.Positioner.Props['anchor'];
+  sticky?: BaseCombobox.Positioner.Props['sticky'];
+  positionMethod?: BaseCombobox.Positioner.Props['positionMethod'];
+}) {
+  return (
+    <BaseCombobox.Portal>
+      <BaseCombobox.Backdrop />
+      <BaseCombobox.Positioner
+        align={align}
+        alignOffset={alignOffset}
+        side={side}
+        sideOffset={sideOffset || 6}
+        anchor={anchor}
+        sticky={sticky}
+        positionMethod={positionMethod}
+      >
+        <BaseCombobox.Popup
+          data-slot="combobox-popup"
+          {...props}
+          className={cn(
+            'bg-popover ring ring-popover-border rounded shadow-popover',
+            'w-(--anchor-width) max-h-[min(var(---available-height),23rem)]',
+            'max-w-(--available-width) origin-(--transform-origin)',
+            'outline-none transition-[transform,scale,opacity]',
+            'data-[ending-style]:opacity-0 data-[ending-style]:scale-90',
+            'data-[starting-style]:opacity-0 data-[starting-style]:scale-90',
+            'has-[>[data-slot=input-group]]:[&_[data-slot=combobox-search]]:border-none',
+            '*:data-[slot=input-group]:border-b *:data-[slot=input-group]:border-popover-separator',
+            className,
+          )}
+        >
+          {children}
+        </BaseCombobox.Popup>
+      </BaseCombobox.Positioner>
+    </BaseCombobox.Portal>
+  );
+}
+
+export function ComboboxSearch({
+  className,
+  ...props
+}: React.ComponentProps<typeof BaseCombobox.Input>) {
+  return (
+    <div className="p-1">
+      <BaseCombobox.Input
+        data-slot="combobox-search"
+        placeholder="Search item"
+        {...props}
+        className={cn(
+          'outline-none h-10 px-2.5 w-full border-b border-input-border',
+          'disabled:opacity-70 disabled:cursor-not-allowed',
+          className,
+        )}
+      />
+    </div>
+  );
+}
+
+export function ComboboxEmpty({
+  className,
+  ...props
+}: React.ComponentProps<typeof BaseCombobox.Empty>) {
+  return (
+    <BaseCombobox.Empty
+      data-slot="combobox-empty"
+      {...props}
+      className={cn('px-3 py-2.5 text-dimmed empty:p-0 text-center')}
+    />
+  );
+}
+
+export function ComboboxList({
+  className,
+  ...props
+}: React.ComponentProps<typeof BaseCombobox.List>) {
+  return (
+    <BaseCombobox.List
+      data-slot="combobox-list"
+      {...props}
+      className={cn(
+        'space-y-0.5 outline-none max-h-[min(23rem,var(--available-height))] overflow-y-auto dark:scheme-dark p-1 empty:p-0',
+        className,
+      )}
+    />
+  );
+}
+
+export function ComboboxItem({
+  children,
+  className,
+  ...props
+}: React.ComponentProps<typeof BaseCombobox.Item>) {
+  return (
+    <BaseCombobox.Item
+      data-slot="combobox-item"
+      {...props}
+      className={cn(
+        'flex items-center text-popover-foreground gap-3.5 py-2.5 px-3 rounded select-none cursor-pointer',
+        'group-data-[side=none]:min-w-[calc(var(--anchor-width))]',
+        'data-[highlighted]:not-[[data-disabled]]:bg-popover-accent data-[selected]:not-[[data-disabled]]:bg-popover-accent',
+        'focus-visible:outline-none',
+        'data-disabled:cursor-not-allowed data-disabled:opacity-70',
+        className,
+      )}
+    >
+      {children}
+      <BaseCombobox.ItemIndicator className="ml-auto">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="3"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="size-4 text-primary"
+        >
+          <path d="M20 6 9 17l-5-5" />
+        </svg>
+      </BaseCombobox.ItemIndicator>
+    </BaseCombobox.Item>
+  );
+}
+
+export function ComboboxGroup({
+  className,
+  ...props
+}: React.ComponentProps<typeof BaseCombobox.Group>) {
+  return (
+    <BaseCombobox.Group
+      data-slot="combobox-group"
+      {...props}
+      className={cn('space-y-0.5', className)}
+    />
+  );
+}
+
+export function ComboboxGroupLabel({
+  className,
+  ...props
+}: React.ComponentProps<typeof BaseCombobox.GroupLabel>) {
+  return (
+    <BaseCombobox.GroupLabel
+      data-slot="combobox-group-label"
+      {...props}
+      className={cn('px-2.5 py-1.5 text-sm font-medium text-dimmed', className)}
+    />
+  );
+}
+
+export function ComboboxSeparator({
+  className,
+  ...props
+}: React.ComponentProps<typeof BaseCombobox.Separator>) {
+  return (
+    <BaseCombobox.Separator
+      data-slot="combobox-separator"
+      {...props}
+      className={cn('h-px my-1 bg-popover-separator', className)}
+    />
+  );
+}
+
+export function ComboboxCollection({
+  ...props
+}: React.ComponentProps<typeof BaseCombobox.Collection>) {
+  return <BaseCombobox.Collection {...props} />;
+}

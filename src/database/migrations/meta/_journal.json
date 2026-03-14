@@ -1,0 +1,55 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1773130955552,
+      "tag": "0000_amazing_sumo",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1773205082179,
+      "tag": "0001_spicy_maginty",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1773250207890,
+      "tag": "0002_faithful_dragon_lord",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1773430015409,
+      "tag": "0003_wild_mattie_franklin",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1773465270504,
+      "tag": "0004_entitlements-and-usage",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1773507751776,
+      "tag": "0005_add-plan-popular",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1773868800000,
+      "tag": "0006_rename-price-in-cents",
+      "breakpoints": true
+    }
+  ]
+}
