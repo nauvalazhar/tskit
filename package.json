@@ -20,6 +20,7 @@
     "@base-ui/react": "^1.0.0",
     "@react-email/components": "^1.0.8",
     "@react-email/render": "^2.0.4",
+    "@sendgrid/mail": "^8.1.6",
     "@tailwindcss/vite": "^4.1.18",
     "@tanstack/react-devtools": "latest",
     "@tanstack/react-router": "latest",

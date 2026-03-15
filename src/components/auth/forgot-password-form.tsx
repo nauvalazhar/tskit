@@ -60,14 +60,12 @@ export function ForgotPasswordForm() {
                 <MailIcon />
                 <AlertTitle>Check your email</AlertTitle>
                 <AlertDescription>
-                  If an account exists with that email, you'll receive a password
-                  reset link shortly.
+                  If an account exists with that email, you'll receive a
+                  password reset link shortly.
                 </AlertDescription>
               </Alert>
               <Text className="text-center">
-                <TextLink
-                  render={<Link to="/login">Back to Login</Link>}
-                />
+                <TextLink render={<Link to="/login">Back to Login</Link>} />
               </Text>
             </>
           ) : (
@@ -106,9 +104,7 @@ export function ForgotPasswordForm() {
                 </Button>
               </Form>
               <Text className="text-center">
-                <TextLink
-                  render={<Link to="/login">Back to Login</Link>}
-                />
+                <TextLink render={<Link to="/login">Back to Login</Link>} />
               </Text>
             </>
           )}

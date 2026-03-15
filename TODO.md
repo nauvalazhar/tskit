@@ -61,3 +61,4 @@
 - [ ] Task scheduler
 - [ ] Scripts runner
 - [ ] Refactor email templates
+- [ ] Typed channels and drivers
