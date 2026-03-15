@@ -2,13 +2,10 @@
   "name": "tskit",
   "private": true,
   "type": "module",
-  "imports": {
-    "#/*": "./src/*"
-  },
   "scripts": {
     "dev": "vite dev --port 3000",
     "build": "vite build",
-    "ui": "bunx selia@latest",
+    "ui": "bunx --bun selia@latest",
     "auth:generate": "bunx auth generate --config src/lib/auth/auth.ts --output src/lib/database/schemas/auth.ts",
     "db:generate": "bunx drizzle-kit generate",
     "db:migrate": "bunx drizzle-kit migrate",
