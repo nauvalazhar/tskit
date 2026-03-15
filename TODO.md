@@ -60,3 +60,4 @@
 - [ ] Email preview in browser
 - [ ] Task scheduler
 - [ ] Scripts runner
+- [ ] Refactor email templates
