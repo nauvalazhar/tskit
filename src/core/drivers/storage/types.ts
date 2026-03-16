@@ -11,15 +11,20 @@ export interface StorageObject {
   size: number;
 }
 
-export interface StorageDriverConfig {
-  driver: string;
+interface StorageDriverConfigBase {
   bucket: string;
-  endpoint: string;
-  region?: string;
-  credentials: { accessKeyId: string; secretAccessKey: string };
   publicUrl?: string;
   prefix?: string;
 }
+
+export interface S3StorageDriverConfig extends StorageDriverConfigBase {
+  driver: 's3';
+  endpoint: string;
+  region?: string;
+  credentials: { accessKeyId: string; secretAccessKey: string };
+}
+
+export type StorageDriverConfig = S3StorageDriverConfig;
 
 export interface StorageDriver {
   upload(params: UploadParams): Promise<StorageObject>;

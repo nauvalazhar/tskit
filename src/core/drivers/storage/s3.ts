@@ -6,7 +6,7 @@ import {
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { BaseStorageDriver } from './base';
-import type { UploadParams, StorageObject, StorageDriverConfig } from './types';
+import type { UploadParams, StorageObject, S3StorageDriverConfig } from './types';
 
 export class S3StorageDriver extends BaseStorageDriver {
   private client: S3Client;
@@ -14,7 +14,7 @@ export class S3StorageDriver extends BaseStorageDriver {
   private publicUrl: string;
   private prefix: string;
 
-  constructor(config: StorageDriverConfig) {
+  constructor(config: S3StorageDriverConfig) {
     super();
     this.bucket = config.bucket;
     this.publicUrl = config.publicUrl || '';
