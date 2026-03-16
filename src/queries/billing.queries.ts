@@ -20,7 +20,7 @@ const POLL_INTERVAL = 2000;
 export function billingSubscriptionPollingQuery(enabled: boolean) {
   return queryOptions({
     queryKey: ['billing', 'subscription', 'polling'],
-    queryFn: () => getSubscription(),
+    queryFn: () => getSubscription().then((data) => data ?? null),
     refetchInterval: (query) => {
       if (!enabled) return false;
       const status = query.state.data?.status;

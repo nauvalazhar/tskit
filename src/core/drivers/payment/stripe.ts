@@ -11,6 +11,8 @@ import type {
   SubscriptionInfo,
   WebhookEvent,
   WebhookEventType,
+  NormalizedSubscriptionData,
+  NormalizedPaymentData,
   ChangePlanParams,
   ChangePlanResult,
 } from './types';
@@ -79,7 +81,28 @@ export class StripePaymentDriver implements PaymentDriver {
     return {
       id: event.id,
       type,
-      data: event.data.object as Record<string, any>,
+      data: this.normalizeEventData(type, event.data.object as Record<string, any>),
+    };
+  }
+
+  private normalizeEventData(
+    type: WebhookEventType,
+    raw: Record<string, any>,
+  ): NormalizedSubscriptionData | NormalizedPaymentData {
+    if (type === 'payment.succeeded' || type === 'payment.failed') {
+      return { subscriptionId: raw.subscription ?? null };
+    }
+
+    const item = raw.items?.data?.[0];
+    return {
+      id: raw.id,
+      customerId: raw.customer,
+      status: raw.status,
+      priceId: item?.price?.id ?? null,
+      currentPeriodStart: item?.current_period_start ?? raw.current_period_start ?? null,
+      currentPeriodEnd: item?.current_period_end ?? raw.current_period_end ?? null,
+      cancelAtPeriodEnd: !!(raw.cancel_at_period_end || raw.cancel_at),
+      canceledAt: raw.canceled_at ?? null,
     };
   }
 

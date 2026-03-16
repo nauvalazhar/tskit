@@ -1,13 +1,13 @@
-import { eq, asc } from 'drizzle-orm';
+import { eq, asc, and } from 'drizzle-orm';
 import { db } from '@/database';
-import { plans } from '@/database/schemas/billing';
+import { plans, planPrices } from '@/database/schemas/billing';
 
 export async function listPlans() {
-  return db
-    .select()
-    .from(plans)
-    .where(eq(plans.active, true))
-    .orderBy(asc(plans.sortOrder));
+  return db.query.plans.findMany({
+    where: eq(plans.active, true),
+    orderBy: asc(plans.sortOrder),
+    with: { prices: true },
+  });
 }
 
 export async function getPlanById(id: string) {
@@ -17,15 +17,21 @@ export async function getPlanById(id: string) {
 }
 
 export async function getPlanByExternalPriceId(priceId: string) {
-  return db.query.plans.findFirst({
-    where: eq(plans.externalPriceId, priceId),
+  const price = await db.query.planPrices.findFirst({
+    where: eq(planPrices.externalPriceId, priceId),
+    with: { plan: true },
+  });
+  return price?.plan ?? null;
+}
+
+export async function getPlanPrice(planId: string, channel: string) {
+  return db.query.planPrices.findFirst({
+    where: and(eq(planPrices.planId, planId), eq(planPrices.channel, channel)),
   });
 }
 
 export async function upsertPlan(data: {
-  channel: string;
-  externalProductId: string;
-  externalPriceId: string;
+  slug: string;
   name: string;
   description?: string | null;
   price: number;
@@ -38,9 +44,7 @@ export async function upsertPlan(data: {
   const [plan] = await db
     .insert(plans)
     .values({
-      channel: data.channel,
-      externalProductId: data.externalProductId,
-      externalPriceId: data.externalPriceId,
+      slug: data.slug,
       name: data.name,
       description: data.description,
       price: data.price,
@@ -51,7 +55,7 @@ export async function upsertPlan(data: {
       active: data.active ?? true,
     })
     .onConflictDoUpdate({
-      target: plans.externalPriceId,
+      target: plans.slug,
       set: {
         name: data.name,
         description: data.description,
@@ -66,4 +70,30 @@ export async function upsertPlan(data: {
     .returning();
 
   return plan;
+}
+
+export async function upsertPlanPrice(data: {
+  planId: string;
+  channel: string;
+  externalProductId: string;
+  externalPriceId: string;
+}) {
+  const [price] = await db
+    .insert(planPrices)
+    .values({
+      planId: data.planId,
+      channel: data.channel,
+      externalProductId: data.externalProductId,
+      externalPriceId: data.externalPriceId,
+    })
+    .onConflictDoUpdate({
+      target: [planPrices.planId, planPrices.channel],
+      set: {
+        externalProductId: data.externalProductId,
+        externalPriceId: data.externalPriceId,
+      },
+    })
+    .returning();
+
+  return price;
 }

@@ -111,6 +111,7 @@ function PricingPage() {
                     />
                   ) : !isAuthenticated ? (
                     <Button
+                      nativeButton={false}
                       variant={plan.popular ? 'primary' : 'outline'}
                       block
                       render={<Link to="/login" />}
@@ -128,9 +129,7 @@ function PricingPage() {
                 {featureLines.length > 0 && (
                   <PlanCardFeatures>
                     {featureLines.map((feature) => (
-                      <PlanCardFeature key={feature}>
-                        {feature}
-                      </PlanCardFeature>
+                      <PlanCardFeature key={feature}>{feature}</PlanCardFeature>
                     ))}
                   </PlanCardFeatures>
                 )}

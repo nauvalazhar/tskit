@@ -1,11 +1,11 @@
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import { paymentConfig } from '@/config/payment';
 import { createPaymentDriver } from '@/core/drivers/payment';
 import type { PaymentDriver, WebhookEvent } from '@/core/drivers/payment/types';
 import { db } from '@/database';
 import { customers } from '@/database/schemas/billing';
 import { users } from '@/database/schemas/auth';
-import { getPlanById } from '@/services/plan.service';
+import { getPlanById, getPlanPrice } from '@/services/plan.service';
 
 class Payment {
   private drivers = new Map<string, PaymentDriver>();
@@ -29,8 +29,9 @@ class Payment {
   }
 
   async getOrCreateCustomer(userId: string) {
+    const channel = this.channel || paymentConfig.default;
     const existing = await db.query.customers.findFirst({
-      where: eq(customers.userId, userId),
+      where: and(eq(customers.userId, userId), eq(customers.channel, channel)),
     });
 
     if (existing) return existing;
@@ -41,7 +42,6 @@ class Payment {
 
     if (!user) throw new Error('User not found');
 
-    const channel = this.channel || paymentConfig.default;
     const result = await this.resolve().createCustomer({
       email: user.email,
       name: user.name,
@@ -65,13 +65,18 @@ class Payment {
     planId: string,
     urls: { success: string; cancel: string },
   ) {
+    const channel = this.channel || paymentConfig.default;
     const customer = await this.getOrCreateCustomer(userId);
     const plan = await getPlanById(planId);
     if (!plan) throw new Error('Plan not found');
 
+    const price = await getPlanPrice(planId, channel);
+    if (!price)
+      throw new Error(`Plan "${plan.name}" not available on channel "${channel}"`);
+
     return this.resolve().createCheckout({
       customerId: customer.externalCustomerId,
-      priceId: plan.externalPriceId,
+      priceId: price.externalPriceId,
       successUrl: urls.success,
       cancelUrl: urls.cancel,
     });
@@ -86,12 +91,17 @@ class Payment {
   }
 
   async changePlan(subscriptionExternalId: string, newPlanId: string) {
+    const channel = this.channel || paymentConfig.default;
     const plan = await getPlanById(newPlanId);
     if (!plan) throw new Error('Plan not found');
 
+    const price = await getPlanPrice(newPlanId, channel);
+    if (!price)
+      throw new Error(`Plan "${plan.name}" not available on channel "${channel}"`);
+
     return this.resolve().changePlan({
       subscriptionId: subscriptionExternalId,
-      newPriceId: plan.externalPriceId,
+      newPriceId: price.externalPriceId,
     });
   }
 

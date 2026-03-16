@@ -8,7 +8,11 @@ import {
 import { users } from '@/database/schemas/auth';
 import { mailer } from '@/lib/mailer';
 import { getPlanByExternalPriceId } from './plan.service';
-import type { WebhookEvent } from '@/core/drivers/payment/types';
+import type {
+  WebhookEvent,
+  NormalizedSubscriptionData,
+  NormalizedPaymentData,
+} from '@/core/drivers/payment/types';
 
 export async function getSubscriptionByUserId(userId: string) {
   return db.query.subscriptions.findFirst({
@@ -47,19 +51,19 @@ export async function handleWebhookEvent(event: WebhookEvent, channel: string) {
 
   switch (event.type) {
     case 'subscription.created':
-      await handleSubscriptionCreated(event.data, channel);
+      await handleSubscriptionCreated(event.data as NormalizedSubscriptionData, channel);
       break;
     case 'subscription.updated':
-      await handleSubscriptionUpdated(event.data, channel);
+      await handleSubscriptionUpdated(event.data as NormalizedSubscriptionData, channel);
       break;
     case 'subscription.deleted':
-      await handleSubscriptionDeleted(event.data);
+      await handleSubscriptionDeleted(event.data as NormalizedSubscriptionData);
       break;
     case 'payment.succeeded':
-      await handlePaymentSucceeded(event.data);
+      await handlePaymentSucceeded(event.data as NormalizedPaymentData);
       break;
     case 'payment.failed':
-      await handlePaymentFailed(event.data);
+      await handlePaymentFailed(event.data as NormalizedPaymentData);
       break;
   }
 
@@ -71,32 +75,26 @@ export async function handleWebhookEvent(event: WebhookEvent, channel: string) {
   });
 }
 
-async function handleSubscriptionCreated(data: Record<string, any>, channel: string) {
-  const customerId = data.customer as string;
+async function handleSubscriptionCreated(data: NormalizedSubscriptionData, channel: string) {
   const customer = await db.query.customers.findFirst({
-    where: eq(customers.externalCustomerId, customerId),
+    where: eq(customers.externalCustomerId, data.customerId),
   });
 
   if (!customer) return;
 
-  const item = data.items?.data?.[0];
-  const priceId = item?.price?.id as string;
-  const plan = priceId ? await getPlanByExternalPriceId(priceId) : null;
+  const plan = data.priceId ? await getPlanByExternalPriceId(data.priceId) : null;
 
   if (!plan) return;
-
-  const periodStart = item?.current_period_start ?? data.current_period_start;
-  const periodEnd = item?.current_period_end ?? data.current_period_end;
 
   await db.insert(subscriptions).values({
     userId: customer.userId,
     planId: plan.id,
     channel,
-    externalId: data.id as string,
-    status: data.status as string,
-    currentPeriodStart: periodStart ? new Date(periodStart * 1000) : null,
-    currentPeriodEnd: periodEnd ? new Date(periodEnd * 1000) : null,
-    cancelAtPeriodEnd: data.cancel_at_period_end ?? false,
+    externalId: data.id,
+    status: data.status,
+    currentPeriodStart: data.currentPeriodStart ? new Date(data.currentPeriodStart * 1000) : null,
+    currentPeriodEnd: data.currentPeriodEnd ? new Date(data.currentPeriodEnd * 1000) : null,
+    cancelAtPeriodEnd: data.cancelAtPeriodEnd,
   });
 
   // Send confirmation email
@@ -112,9 +110,8 @@ async function handleSubscriptionCreated(data: Record<string, any>, channel: str
   }
 }
 
-async function handleSubscriptionUpdated(data: Record<string, any>, channel: string) {
-  const externalId = data.id as string;
-  const existing = await getSubscriptionByExternalId(externalId);
+async function handleSubscriptionUpdated(data: NormalizedSubscriptionData, channel: string) {
+  const existing = await getSubscriptionByExternalId(data.id);
 
   if (!existing) {
     // If we don't have a record yet, treat as created
@@ -122,59 +119,50 @@ async function handleSubscriptionUpdated(data: Record<string, any>, channel: str
     return;
   }
 
-  const item = data.items?.data?.[0];
-  const priceId = item?.price?.id as string;
-  const plan = priceId ? await getPlanByExternalPriceId(priceId) : null;
-
-  const periodStart = item?.current_period_start ?? data.current_period_start;
-  const periodEnd = item?.current_period_end ?? data.current_period_end;
+  const plan = data.priceId ? await getPlanByExternalPriceId(data.priceId) : null;
 
   await db
     .update(subscriptions)
     .set({
-      status: data.status as string,
+      status: data.status,
       planId: plan?.id ?? existing.planId,
-      currentPeriodStart: periodStart ? new Date(periodStart * 1000) : undefined,
-      currentPeriodEnd: periodEnd ? new Date(periodEnd * 1000) : undefined,
-      cancelAtPeriodEnd: data.cancel_at_period_end ?? false,
-      canceledAt: data.canceled_at ? new Date(data.canceled_at * 1000) : null,
+      currentPeriodStart: data.currentPeriodStart ? new Date(data.currentPeriodStart * 1000) : undefined,
+      currentPeriodEnd: data.currentPeriodEnd ? new Date(data.currentPeriodEnd * 1000) : undefined,
+      cancelAtPeriodEnd: data.cancelAtPeriodEnd,
+      canceledAt: data.canceledAt ? new Date(data.canceledAt * 1000) : null,
     })
-    .where(eq(subscriptions.externalId, externalId));
+    .where(eq(subscriptions.externalId, data.id));
 }
 
-async function handleSubscriptionDeleted(data: Record<string, any>) {
-  const externalId = data.id as string;
-
+async function handleSubscriptionDeleted(data: NormalizedSubscriptionData) {
   await db
     .update(subscriptions)
     .set({
       status: 'canceled',
       canceledAt: new Date(),
     })
-    .where(eq(subscriptions.externalId, externalId));
+    .where(eq(subscriptions.externalId, data.id));
 }
 
-async function handlePaymentSucceeded(data: Record<string, any>) {
-  const subscriptionId = data.subscription as string;
-  if (!subscriptionId) return;
+async function handlePaymentSucceeded(data: NormalizedPaymentData) {
+  if (!data.subscriptionId) return;
 
   await db
     .update(subscriptions)
     .set({ status: 'active' })
-    .where(eq(subscriptions.externalId, subscriptionId));
+    .where(eq(subscriptions.externalId, data.subscriptionId));
 }
 
-async function handlePaymentFailed(data: Record<string, any>) {
-  const subscriptionId = data.subscription as string;
-  if (!subscriptionId) return;
+async function handlePaymentFailed(data: NormalizedPaymentData) {
+  if (!data.subscriptionId) return;
 
   await db
     .update(subscriptions)
     .set({ status: 'past_due' })
-    .where(eq(subscriptions.externalId, subscriptionId));
+    .where(eq(subscriptions.externalId, data.subscriptionId));
 
   // Send failure email
-  const sub = await getSubscriptionByExternalId(subscriptionId);
+  const sub = await getSubscriptionByExternalId(data.subscriptionId);
   if (!sub) return;
 
   const user = await db.query.users.findFirst({

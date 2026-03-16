@@ -8,6 +8,7 @@ import {
   boolean,
   jsonb,
   index,
+  uniqueIndex,
 } from 'drizzle-orm/pg-core';
 import { users } from './auth';
 
@@ -15,9 +16,7 @@ export const plans = pgTable('plans', {
   id: uuid('id')
     .default(sql`pg_catalog.gen_random_uuid()`)
     .primaryKey(),
-  channel: text('channel').notNull(),
-  externalProductId: text('external_product_id').notNull().unique(),
-  externalPriceId: text('external_price_id').notNull().unique(),
+  slug: text('slug').notNull().unique(),
   name: text('name').notNull(),
   description: text('description'),
   price: integer('price').default(0).notNull(),
@@ -37,6 +36,30 @@ export const plans = pgTable('plans', {
     .notNull(),
 });
 
+export const planPrices = pgTable(
+  'plan_prices',
+  {
+    id: uuid('id')
+      .default(sql`pg_catalog.gen_random_uuid()`)
+      .primaryKey(),
+    planId: uuid('plan_id')
+      .notNull()
+      .references(() => plans.id, { onDelete: 'cascade' }),
+    channel: text('channel').notNull(),
+    externalProductId: text('external_product_id').notNull(),
+    externalPriceId: text('external_price_id').notNull().unique(),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at')
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (table) => [
+    index('plan_prices_planId_idx').on(table.planId),
+    uniqueIndex('plan_prices_planId_channel_unq').on(table.planId, table.channel),
+  ],
+);
+
 export const customers = pgTable(
   'customers',
   {
@@ -45,8 +68,7 @@ export const customers = pgTable(
       .primaryKey(),
     userId: uuid('user_id')
       .notNull()
-      .references(() => users.id, { onDelete: 'cascade' })
-      .unique(),
+      .references(() => users.id, { onDelete: 'cascade' }),
     channel: text('channel').notNull(),
     externalCustomerId: text('external_customer_id').notNull().unique(),
     createdAt: timestamp('created_at').defaultNow().notNull(),
@@ -55,7 +77,10 @@ export const customers = pgTable(
       .$onUpdate(() => new Date())
       .notNull(),
   },
-  (table) => [index('customers_userId_idx').on(table.userId)],
+  (table) => [
+    index('customers_userId_idx').on(table.userId),
+    uniqueIndex('customers_userId_channel_unq').on(table.userId, table.channel),
+  ],
 );
 
 export const subscriptions = pgTable(
@@ -132,6 +157,14 @@ export const webhookEvents = pgTable('webhook_events', {
 
 export const plansRelations = relations(plans, ({ many }) => ({
   subscriptions: many(subscriptions),
+  prices: many(planPrices),
+}));
+
+export const planPricesRelations = relations(planPrices, ({ one }) => ({
+  plan: one(plans, {
+    fields: [planPrices.planId],
+    references: [plans.id],
+  }),
 }));
 
 export const customersRelations = relations(customers, ({ one }) => ({

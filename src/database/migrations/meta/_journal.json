@@ -50,6 +50,13 @@
       "when": 1773868800000,
       "tag": "0006_rename-price-in-cents",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1773955200000,
+      "tag": "0007_multi-channel-billing",
+      "breakpoints": true
     }
   ]
 }

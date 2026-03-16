@@ -52,10 +52,25 @@ export type WebhookEventType =
   | 'payment.failed'
   | 'unhandled';
 
+export interface NormalizedSubscriptionData {
+  id: string;
+  customerId: string;
+  status: string;
+  priceId: string | null;
+  currentPeriodStart: number | null;
+  currentPeriodEnd: number | null;
+  cancelAtPeriodEnd: boolean;
+  canceledAt: number | null;
+}
+
+export interface NormalizedPaymentData {
+  subscriptionId: string | null;
+}
+
 export interface WebhookEvent {
   id: string;
   type: WebhookEventType;
-  data: Record<string, any>;
+  data: NormalizedSubscriptionData | NormalizedPaymentData;
 }
 
 export interface ChangePlanParams {

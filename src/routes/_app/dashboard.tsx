@@ -10,7 +10,12 @@ import {
 } from '@/components/selia/item';
 import { PageHeader } from '@/components/shared/page-header';
 import { createFileRoute, Link } from '@tanstack/react-router';
-import { UserIcon, ShieldIcon, Settings2Icon, ChevronRightIcon } from 'lucide-react';
+import {
+  UserIcon,
+  ShieldIcon,
+  Settings2Icon,
+  ChevronRightIcon,
+} from 'lucide-react';
 
 export const Route = createFileRoute('/_app/dashboard')({
   loader: async ({ context }) => {
@@ -32,7 +37,7 @@ function RouteComponent() {
           Here's an overview of your account.
         </Text>
       </PageHeader>
-      <div className="flex flex-col gap-3">
+      <div className="flex gap-3 *:flex-1">
         <Item render={<Link to="/settings" />}>
           <ItemMedia>
             <UserIcon />

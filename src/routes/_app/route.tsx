@@ -17,7 +17,7 @@ function RouteComponent() {
   return (
     <div className="flex h-dvh bg-[oklch(0.1809_0.0023_247.96)]">
       <AppSidebar />
-      <main className="flex-1 overflow-auto p-10 rounded-l-3xl ring ring-card-border my-4 bg-background">
+      <main className="flex-1 overflow-auto p-10 rounded-l-3xl ring ring-card-border/40 my-4 bg-background">
         <div className="mx-auto max-w-5xl">
           <EmailVerificationBanner />
           <Outlet />
