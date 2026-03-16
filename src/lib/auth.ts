@@ -7,6 +7,8 @@ import { users } from '@/database/schemas/auth';
 import { tanstackStartCookies } from 'better-auth/tanstack-start';
 import { mailer } from '@/lib/mailer';
 import { storage } from '@/lib/storage';
+import { customSession } from 'better-auth/plugins';
+import { subscriptions } from '@/database/schemas/billing';
 
 export const auth = betterAuth({
   baseURL: process.env.VITE_APP_URL || 'http://localhost:3000',
@@ -86,5 +88,22 @@ export const auth = betterAuth({
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
     },
   },
-  plugins: [tanstackStartCookies(), twoFactor()],
+  plugins: [
+    tanstackStartCookies(),
+    twoFactor(),
+    customSession(async ({ user, session }) => {
+      const subscription = await db.query.subscriptions.findFirst({
+        where: eq(subscriptions.userId, user.id),
+        with: { plan: true },
+      });
+
+      return {
+        session,
+        user: {
+          ...user,
+          subscription,
+        },
+      };
+    }),
+  ],
 });

@@ -6,11 +6,9 @@ export function UserAvatar({
   ...props
 }: { name: string; image?: string } & React.ComponentProps<typeof Avatar>) {
   return (
-    <>
-      <Avatar size="sm" {...props}>
-        {image && <AvatarImage src={image} alt="Avatar" />}
-        <AvatarFallback>{name.charAt(0)}</AvatarFallback>
-      </Avatar>
-    </>
+    <Avatar size="sm" className="shrink-0" {...props}>
+      {image && <AvatarImage src={image} alt="Avatar" />}
+      <AvatarFallback>{name.charAt(0)}</AvatarFallback>
+    </Avatar>
   );
 }

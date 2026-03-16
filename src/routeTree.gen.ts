@@ -27,6 +27,7 @@ import { Route as AppBillingRouteImport } from './routes/_app/billing'
 import { Route as AppSettingsIndexRouteImport } from './routes/_app/settings.index'
 import { Route as AppBillingIndexRouteImport } from './routes/_app/billing.index'
 import { Route as ApiWebhooksStripeRouteImport } from './routes/api/webhooks/stripe'
+import { Route as ApiWebhooksPolarRouteImport } from './routes/api/webhooks/polar'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth.$'
 import { Route as AppSettingsSecurityRouteImport } from './routes/_app/settings.security'
 import { Route as AppSettingsPreferencesRouteImport } from './routes/_app/settings.preferences'
@@ -120,6 +121,11 @@ const ApiWebhooksStripeRoute = ApiWebhooksStripeRouteImport.update({
   path: '/api/webhooks/stripe',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiWebhooksPolarRoute = ApiWebhooksPolarRouteImport.update({
+  id: '/api/webhooks/polar',
+  path: '/api/webhooks/polar',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
   path: '/api/auth/$',
@@ -164,6 +170,7 @@ export interface FileRoutesByFullPath {
   '/settings/preferences': typeof AppSettingsPreferencesRoute
   '/settings/security': typeof AppSettingsSecurityRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/webhooks/polar': typeof ApiWebhooksPolarRoute
   '/api/webhooks/stripe': typeof ApiWebhooksStripeRoute
   '/billing/': typeof AppBillingIndexRoute
   '/settings/': typeof AppSettingsIndexRoute
@@ -183,6 +190,7 @@ export interface FileRoutesByTo {
   '/settings/preferences': typeof AppSettingsPreferencesRoute
   '/settings/security': typeof AppSettingsSecurityRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/webhooks/polar': typeof ApiWebhooksPolarRoute
   '/api/webhooks/stripe': typeof ApiWebhooksStripeRoute
   '/billing': typeof AppBillingIndexRoute
   '/settings': typeof AppSettingsIndexRoute
@@ -209,6 +217,7 @@ export interface FileRoutesById {
   '/_app/settings/preferences': typeof AppSettingsPreferencesRoute
   '/_app/settings/security': typeof AppSettingsSecurityRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/webhooks/polar': typeof ApiWebhooksPolarRoute
   '/api/webhooks/stripe': typeof ApiWebhooksStripeRoute
   '/_app/billing/': typeof AppBillingIndexRoute
   '/_app/settings/': typeof AppSettingsIndexRoute
@@ -233,6 +242,7 @@ export interface FileRouteTypes {
     | '/settings/preferences'
     | '/settings/security'
     | '/api/auth/$'
+    | '/api/webhooks/polar'
     | '/api/webhooks/stripe'
     | '/billing/'
     | '/settings/'
@@ -252,6 +262,7 @@ export interface FileRouteTypes {
     | '/settings/preferences'
     | '/settings/security'
     | '/api/auth/$'
+    | '/api/webhooks/polar'
     | '/api/webhooks/stripe'
     | '/billing'
     | '/settings'
@@ -277,6 +288,7 @@ export interface FileRouteTypes {
     | '/_app/settings/preferences'
     | '/_app/settings/security'
     | '/api/auth/$'
+    | '/api/webhooks/polar'
     | '/api/webhooks/stripe'
     | '/_app/billing/'
     | '/_app/settings/'
@@ -288,6 +300,7 @@ export interface RootRouteChildren {
   MarketingRouteRoute: typeof MarketingRouteRouteWithChildren
   AdminRouteRoute: typeof AdminRouteRouteWithChildren
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
+  ApiWebhooksPolarRoute: typeof ApiWebhooksPolarRoute
   ApiWebhooksStripeRoute: typeof ApiWebhooksStripeRoute
 }
 
@@ -417,6 +430,13 @@ declare module '@tanstack/react-router' {
       path: '/api/webhooks/stripe'
       fullPath: '/api/webhooks/stripe'
       preLoaderRoute: typeof ApiWebhooksStripeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/webhooks/polar': {
+      id: '/api/webhooks/polar'
+      path: '/api/webhooks/polar'
+      fullPath: '/api/webhooks/polar'
+      preLoaderRoute: typeof ApiWebhooksPolarRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/auth/$': {
@@ -557,6 +577,7 @@ const rootRouteChildren: RootRouteChildren = {
   MarketingRouteRoute: MarketingRouteRouteWithChildren,
   AdminRouteRoute: AdminRouteRouteWithChildren,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
+  ApiWebhooksPolarRoute: ApiWebhooksPolarRoute,
   ApiWebhooksStripeRoute: ApiWebhooksStripeRoute,
 }
 export const routeTree = rootRouteImport

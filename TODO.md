@@ -55,9 +55,11 @@
 
 ## Guides/Architectural
 
+- [x] Email preview in browser
 - [ ] Check if codebase comply with the arch
 - [ ] Components should use compound pattern
-- [ ] Email preview in browser
+- [ ] Team/org
+- [ ] Admin features
 - [ ] Task scheduler
 - [ ] Scripts runner
 - [ ] Refactor email templates

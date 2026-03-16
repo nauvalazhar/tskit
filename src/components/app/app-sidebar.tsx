@@ -1,31 +1,21 @@
 import {
   Sidebar,
-  SidebarCollapsible,
-  SidebarCollapsiblePanel,
-  SidebarCollapsibleTrigger,
   SidebarContent,
   SidebarFooter,
   SidebarGroup,
-  SidebarGroupAction,
-  SidebarGroupTitle,
   SidebarHeader,
   SidebarItem,
   SidebarItemButton,
   SidebarList,
   SidebarLogo,
   SidebarMenu,
-  SidebarSubmenu,
 } from '@/components/selia/sidebar';
 import {
-  ChartAreaIcon,
   ChevronsUpDownIcon,
   CreditCardIcon,
   HomeIcon,
   LogOutIcon,
-  PlusIcon,
   SettingsIcon,
-  ShoppingBagIcon,
-  TagsIcon,
   UserIcon,
 } from 'lucide-react';
 import {
@@ -35,14 +25,13 @@ import {
   MenuTrigger,
   MenuSeparator,
 } from '@/components/selia/menu';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/selia/avatar';
 import { authClient } from '@/lib/auth-client';
 import { UserAvatar } from '../shared/user-avatar';
-import { Link, useRouter } from '@tanstack/react-router';
+import { Link } from '@tanstack/react-router';
 
 export function AppSidebar() {
   return (
-    <Sidebar className="lg:w-72">
+    <Sidebar className="lg:w-64">
       <SidebarHeader>
         <SidebarLogo>
           <img
@@ -56,7 +45,6 @@ export function AppSidebar() {
       <SidebarContent>
         <SidebarMenu>
           <SidebarGroup>
-            <SidebarGroupTitle>Navigation</SidebarGroupTitle>
             <SidebarList>
               <SidebarItem>
                 <SidebarItemButton render={<Link to="/dashboard" />}>
@@ -89,7 +77,6 @@ export function AppSidebar() {
 
 function UserMenu() {
   const { data: session, error } = authClient.useSession();
-  const router = useRouter();
 
   if (!session || error) {
     return null;
@@ -104,11 +91,13 @@ function UserMenu() {
         render={
           <SidebarItemButton>
             <UserAvatar name={user.name} image={user.image || ''} />
-            <div className="flex flex-col">
+            <div className="flex flex-col overflow-hidden">
               <span className="font-medium">{user.name}</span>
-              <span className="text-sm text-muted">{user.email}</span>
+              <span className="text-sm text-muted truncate">
+                {user.subscription?.plan.name || 'Free Plan'}
+              </span>
             </div>
-            <ChevronsUpDownIcon className="ml-auto" />
+            <ChevronsUpDownIcon className="ml-auto shrink-0" />
           </SidebarItemButton>
         }
       />
