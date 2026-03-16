@@ -15,6 +15,25 @@ General-purpose SaaS starter kit built on TanStack Start with batteries included
 - **Language:** TypeScript (strict mode)
 - **Package Manager:** bun
 
+## Scripts
+
+All scripts are run with `bun`:
+
+| Command | Description |
+|---------|-------------|
+| `bun dev` | Start dev server on port 3000 |
+| `bun run build` | Production build |
+| `bun run preview` | Preview production build |
+| `bun test` | Run Vitest tests |
+| `bun run db:generate` | Generate Drizzle migrations from schema changes |
+| `bun run db:migrate` | Apply pending database migrations |
+| `bun run db:seed` | Seed database with development data |
+| `bun run auth:generate` | Regenerate Better Auth schema (`database/schemas/auth.ts`) |
+| `bun run email:dev` | Start React Email preview on port 3001 |
+| `bun run ui` | Run Selia UI CLI (add/update components) |
+
+**DO NOT** use `npx`, `bunx`, or direct tool invocations (e.g., `npx drizzle-kit generate`) — always use the `bun run <script>` aliases above.
+
 ## Project Structure
 
 ```
