@@ -28,7 +28,9 @@ export const Route = createFileRoute('/_marketing/pricing')({
     const isAuthenticated = !!context.session?.user;
     const [plans, subscription] = await Promise.all([
       getPlans(),
-      isAuthenticated ? getSubscription() : Promise.resolve(null),
+      isAuthenticated
+        ? getSubscription().catch(() => null)
+        : Promise.resolve(null),
     ]);
     return { plans, subscription, isAuthenticated };
   },

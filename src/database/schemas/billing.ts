@@ -10,7 +10,7 @@ import {
   index,
   uniqueIndex,
 } from 'drizzle-orm/pg-core';
-import { users } from './auth';
+import { users, organizations } from './auth';
 import type { PaymentChannel } from '@/config/payment';
 
 export const plans = pgTable('plans', {
@@ -70,6 +70,9 @@ export const customers = pgTable(
     userId: uuid('user_id')
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
+    organizationId: uuid('organization_id')
+      .notNull()
+      .references(() => organizations.id, { onDelete: 'cascade' }),
     channel: text('channel').$type<PaymentChannel>().notNull(),
     externalCustomerId: text('external_customer_id').notNull().unique(),
     createdAt: timestamp('created_at').defaultNow().notNull(),
@@ -80,7 +83,8 @@ export const customers = pgTable(
   },
   (table) => [
     index('customers_userId_idx').on(table.userId),
-    uniqueIndex('customers_userId_channel_unq').on(table.userId, table.channel),
+    index('customers_organizationId_idx').on(table.organizationId),
+    uniqueIndex('customers_orgId_channel_unq').on(table.organizationId, table.channel),
   ],
 );
 
@@ -93,6 +97,9 @@ export const subscriptions = pgTable(
     userId: uuid('user_id')
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
+    organizationId: uuid('organization_id')
+      .notNull()
+      .references(() => organizations.id, { onDelete: 'cascade' }),
     planId: uuid('plan_id')
       .notNull()
       .references(() => plans.id, { onDelete: 'restrict' }),
@@ -111,6 +118,7 @@ export const subscriptions = pgTable(
   },
   (table) => [
     index('subscriptions_userId_idx').on(table.userId),
+    index('subscriptions_organizationId_idx').on(table.organizationId),
     index('subscriptions_planId_idx').on(table.planId),
   ],
 );
@@ -121,9 +129,9 @@ export const usage = pgTable(
     id: uuid('id')
       .default(sql`pg_catalog.gen_random_uuid()`)
       .primaryKey(),
-    userId: uuid('user_id')
+    organizationId: uuid('organization_id')
       .notNull()
-      .references(() => users.id, { onDelete: 'cascade' }),
+      .references(() => organizations.id, { onDelete: 'cascade' }),
     featureKey: text('feature_key').notNull(),
     used: integer('used').default(0).notNull(),
     periodStart: timestamp('period_start').notNull(),
@@ -134,13 +142,13 @@ export const usage = pgTable(
       .$onUpdate(() => new Date())
       .notNull(),
   },
-  (table) => [index('usage_userId_featureKey_idx').on(table.userId, table.featureKey)],
+  (table) => [index('usage_orgId_featureKey_idx').on(table.organizationId, table.featureKey)],
 );
 
 export const usageRelations = relations(usage, ({ one }) => ({
-  user: one(users, {
-    fields: [usage.userId],
-    references: [users.id],
+  organization: one(organizations, {
+    fields: [usage.organizationId],
+    references: [organizations.id],
   }),
 }));
 
@@ -173,12 +181,20 @@ export const customersRelations = relations(customers, ({ one }) => ({
     fields: [customers.userId],
     references: [users.id],
   }),
+  organization: one(organizations, {
+    fields: [customers.organizationId],
+    references: [organizations.id],
+  }),
 }));
 
 export const subscriptionsRelations = relations(subscriptions, ({ one }) => ({
   user: one(users, {
     fields: [subscriptions.userId],
     references: [users.id],
+  }),
+  organization: one(organizations, {
+    fields: [subscriptions.organizationId],
+    references: [organizations.id],
   }),
   plan: one(plans, {
     fields: [subscriptions.planId],

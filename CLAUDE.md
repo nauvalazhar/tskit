@@ -51,10 +51,14 @@ src/
 │   │   ├── settings.security.tsx    # Password & 2FA
 │   │   ├── settings.preferences.tsx # Theme
 │   │   ├── settings.activity.tsx    # Activity log
-│   │   └── settings.advanced.tsx    # Delete account
+│   │   ├── settings.advanced.tsx    # Delete account
+│   │   ├── settings.team.tsx        # Team settings layout
+│   │   ├── settings.team.index.tsx  # Team general settings
+│   │   └── settings.team.members.tsx # Team members & invitations
 │   ├── _marketing/                  # Public pages
 │   │   ├── index.tsx                # Landing page
 │   │   └── pricing.tsx              # Pricing page
+│   ├── invite.$invitationId.tsx     # Team invitation acceptance
 │   ├── admin/                       # Admin pages (overview, users, subscriptions, plans, audit)
 │   └── api/
 │       ├── auth.$.ts                # Better Auth handler
@@ -62,15 +66,16 @@ src/
 │
 ├── components/
 │   ├── selia/                       # Design system (27 components)
-│   ├── app/                         # App shell, email verification banner
+│   ├── app/                         # App shell, email verification banner, team switcher
 │   ├── auth/                        # Login, signup, forgot/reset password forms
 │   ├── billing/                     # Plan card, checkout, cancel, change plan, status
-│   ├── settings/                    # Profile, password, 2FA, avatar, sessions list, activity log
+│   ├── settings/                    # Profile, password, 2FA, avatar, sessions list, activity log, team settings
 │   └── shared/                      # Error boundary, not-found, page header, tabline
 │
-├── validations/                     # Shared Zod schemas (importable by all layers)
+├── validations/                     # Shared Zod schemas + types (importable by all layers)
 │   ├── admin.ts                     # Admin search/filter schemas
-│   └── audit.ts                     # Audit log query schemas
+│   ├── audit.ts                     # Audit log query schemas
+│   └── team.ts                      # Team schemas + TeamMember/TeamInvitation types
 │
 ├── services/                        # Business logic + DB queries
 │   ├── admin/                       # Admin-specific services (split by domain)
@@ -91,7 +96,8 @@ src/
 │   │   ├── plans.ts
 │   │   └── audit.ts
 │   ├── auth.ts                      # getSession, listUserAccounts
-│   ├── billing.ts                   # checkout, plans, subscription, cancel
+│   ├── billing.ts                   # checkout, plans, subscription, cancel (org-scoped)
+│   ├── team.ts                      # team CRUD, members, invitations, active org
 │   ├── settings.ts                  # updateProfile, updateTheme, deleteAccount
 │   ├── storage.ts                   # uploadAvatar
 │   └── audit.ts                     # getUserAuditLogs
@@ -102,7 +108,8 @@ src/
 │   ├── password-changed.tsx
 │   ├── subscription-created.tsx
 │   ├── payment-failed.tsx
-│   └── index.ts                     # Template type map
+│   ├── team-invitation.tsx
+│   └── index.ts                     # Template registry + type map
 │
 ├── queries/
 │   ├── admin/                       # Admin query option factories (split by domain)
@@ -112,6 +119,7 @@ src/
 │   │   ├── plans.queries.ts
 │   │   └── audit.queries.ts
 │   ├── billing.queries.ts           # TanStack Query option factories
+│   ├── team.queries.ts             # Team query option factories
 │   └── audit.queries.ts            # User audit log query options
 │
 ├── hooks/
@@ -120,8 +128,9 @@ src/
 │
 ├── middleware/
 │   ├── auth.ts                      # authMiddleware (redirects to /login)
+│   ├── org.ts                       # orgMiddleware (requires active org)
 │   ├── email-verified.ts            # emailVerifiedMiddleware
-│   ├── subscribed.ts                # subscribedMiddleware (active subscription)
+│   ├── subscribed.ts                # subscribedMiddleware (org subscription, chains org middleware)
 │   └── logging.ts                   # Request logging + serverFnErrorMiddleware
 │
 ├── config/                          # Named channels — only place env vars are read
@@ -131,8 +140,9 @@ src/
 │   └── payment.ts                   # Payment channels (Stripe)
 │
 ├── lib/                             # App-level facades over core/
-│   ├── auth.ts                      # Better Auth server instance
-│   ├── auth-client.ts               # Better Auth client instance
+│   ├── auth.ts                      # Better Auth server instance (org plugin, customSession)
+│   ├── auth-client.ts               # Better Auth client instance (org client plugin)
+│   ├── team.ts                      # Personal team auto-creation on signup
 │   ├── entitlements.ts              # hasFeature(), withinLimit(), requireLimit()
 │   ├── storage.ts                   # storage.upload(), storage.use('private')
 │   ├── mailer.ts                    # mailer.send(template, to, data)
@@ -149,8 +159,8 @@ src/
 │   ├── index.ts                     # Drizzle client
 │   ├── seed.ts                      # Development seed script
 │   ├── schemas/
-│   │   ├── auth.ts                  # user, session, account, verification
-│   │   ├── billing.ts               # plans, customers, subscriptions, usage, webhookEvents
+│   │   ├── auth.ts                  # user, session, account, verification, organization, member, invitation
+│   │   ├── billing.ts               # plans, customers, subscriptions, usage, webhookEvents (org-scoped)
 │   │   ├── settings.ts              # User settings
 │   │   └── audit.ts                 # Audit log
 │   └── migrations/
@@ -193,7 +203,7 @@ routes → components → queries → functions → services → database/
 Storage, email, and payment all follow: `config/*.ts` defines channels → `core/drivers/` implements the interface → `lib/*.ts` provides the facade. Consumers import from `lib/`, never from `core/` or `config/` directly.
 
 ### Middleware Chain
-Server functions use `.middleware([authMiddleware])` for auth. Middleware attaches `context.user`. Chain middlewares: `subscribedMiddleware` adds `context.subscription` with plan entitlements.
+Server functions use `.middleware([authMiddleware])` for auth. Middleware attaches `context.user`. Chain middlewares: `orgMiddleware` chains after auth and adds `context.organization` (active org). `subscribedMiddleware` chains after org and adds `context.subscription` with plan entitlements. Billing functions use `orgMiddleware` + role checks for owner/admin access.
 
 ### Email Templates
 File name = template name: `emails/verify-email.tsx` → `mailer.send("verify-email", to, data)`. Each file exports `subject` (function) + default component. Type map in `emails/index.ts` infers props automatically.
@@ -202,13 +212,16 @@ File name = template name: `emails/verify-email.tsx` → `mailer.send("verify-em
 Plans store `entitlements` as JSONB (`{ projects: 3, analytics: true }`). Check with `hasFeature()` / `withinLimit()` / `requireLimit()` from `lib/entitlements.ts`. Feature keys defined in `config/features.ts`.
 
 ### Usage Tracking
-`usage.service.ts` tracks per-user consumption with lazy period reset. Operates on `userId` + `featureKey`, not orgId.
+`usage.service.ts` tracks per-org consumption with lazy period reset. Operates on `organizationId` + `featureKey`.
 
 ### Audit Logging
 `audit.service.ts` records who did what. Log via `audit.log()` facade from `lib/audit.ts`. Action names use dot-notation: `domain.resource.verb` (e.g., `billing.checkout.created`, `admin.user.banned`). Query logs via `getAuditLogs` server function (admin only, cursor-paginated).
 
 ### Session Flow
-Session fetched once in `__root.tsx` → flows via route context → layout routes guard access in `beforeLoad` → components read via `Route.useRouteContext()`.
+Session fetched once in `__root.tsx` → flows via route context (includes `activeOrganization`) → layout routes guard access in `beforeLoad` → components read via `Route.useRouteContext()`. Active org is auto-set on session creation via `databaseHooks.session.create.before` (prefers last-used org from user settings, falls back to earliest membership).
+
+### Teams / Organizations
+Every user belongs to at least one team. Personal team auto-created on signup via `databaseHooks.user.create.after`. Better Auth `organization()` plugin manages schema (organizations, members, invitations). Active org stored on session (`activeOrganizationId`). Team switcher in sidebar. Billing, subscriptions, and usage are org-scoped — only team owners/admins can manage billing.
 
 ### Error Handling
 - Server functions: framework primitives (`redirect`, `notFound`, `Error`)
@@ -236,8 +249,8 @@ Session fetched once in `__root.tsx` → flows via route context → layout rout
 ## What's Implemented
 
 - Auth: email/password, GitHub OAuth, Google OAuth, 2FA (TOTP), email verification, password reset
-- Billing: Stripe checkout, subscription lifecycle, webhook handling, customer portal, plan entitlements
-- Email: 5 transactional templates (verify-email, reset-password, password-changed, subscription-created, payment-failed)
+- Billing: Stripe checkout, subscription lifecycle, webhook handling, customer portal, plan entitlements (org-scoped)
+- Email: 6 transactional templates (verify-email, reset-password, password-changed, subscription-created, payment-failed, team-invitation)
 - Storage: S3/R2 upload with scoped keys, avatar upload
 - Usage tracking & metering with lazy period reset
 - User settings: profile, avatar, password, 2FA, theme preferences, session management, account deletion
@@ -250,10 +263,13 @@ Session fetched once in `__root.tsx` → flows via route context → layout rout
 - Admin dashboard: overview, users, subscriptions, plans, audit log
 - Database seed script
 - API response helpers
+- Teams/organizations: create, switch, invite, accept/reject invitations, role management (owner/admin/member)
+- Team settings: general (name/slug), members, delete (owner-only)
+- Team switcher in sidebar with create team dialog
+- Invitation flow: email invitations, acceptance page with inviter details
 
 ## What's Planned (Not Yet Implemented)
 
-- Team/organization UI (Better Auth org plugin is wired but no UI exists)
 - Background jobs / queue system (no `core/drivers/queue/`, no `jobs/`, no `lib/queue.ts`)
 
 ## Common Tasks
@@ -288,5 +304,7 @@ Session fetched once in `__root.tsx` → flows via route context → layout rout
 - **DO NOT** modify `routeTree.gen.ts` — it's auto-generated
 - The `#/*` import alias maps to `./src/*` (configured in package.json `imports`)
 - Auth schemas in `database/schemas/auth.ts` are generated by Better Auth CLI — edit with care
-- Billing schema is consolidated in `database/schemas/billing.ts` (plans, customers, subscriptions, usage, webhookEvents) — not separate files
-- The auth server uses `twoFactor()` plugin, NOT `organization()`. The client uses `twoFactorClient()`, NOT `organizationClient()`.
+- Billing schema is consolidated in `database/schemas/billing.ts` (plans, customers, subscriptions, usage, webhookEvents) — not separate files. Subscriptions, customers, and usage are org-scoped (have `organizationId` column).
+- The auth server uses `twoFactor()`, `admin()`, and `organization()` plugins. The client uses `twoFactorClient()`, `adminClient()`, and `organizationClient()`.
+- Billing is org-scoped: subscriptions belong to the active organization, not the user. Only team owners/admins can manage billing. The `subscribedMiddleware` chains after `orgMiddleware`.
+- Auth schemas in `database/schemas/auth.ts` include org tables (organizations, members, invitations) — generated by Better Auth CLI.

@@ -28,21 +28,28 @@ interface SubscriptionStatusProps {
       }
     | null
     | undefined;
+  canManage?: boolean;
 }
 
-export function SubscriptionStatus({ subscription }: SubscriptionStatusProps) {
+export function SubscriptionStatus({ subscription, canManage = true }: SubscriptionStatusProps) {
   if (!subscription) {
     return (
       <Card>
         <CardHeader>
           <CardTitle>No active subscription</CardTitle>
-          <CardDescription>Subscribe to a plan to get started.</CardDescription>
+          <CardDescription>
+            {canManage
+              ? 'Subscribe to a plan to get started.'
+              : 'Your team does not have an active subscription.'}
+          </CardDescription>
         </CardHeader>
-        <CardBody>
-          <Button variant="primary" render={<Link to="/pricing" />}>
-            View Plans
-          </Button>
-        </CardBody>
+        {canManage && (
+          <CardBody>
+            <Button variant="primary" render={<Link to="/pricing" />}>
+              View Plans
+            </Button>
+          </CardBody>
+        )}
       </Card>
     );
   }
@@ -77,13 +84,15 @@ export function SubscriptionStatus({ subscription }: SubscriptionStatusProps) {
               ? `Renews on ${periodEnd}`
               : null}
         </CardDescription>
-        <CardHeaderAction>
-          <ManageButton />
-          {subscription.status === 'active' &&
-            !subscription.cancelAtPeriodEnd && (
-              <CancelButton periodEnd={periodEnd || ''} />
-            )}
-        </CardHeaderAction>
+        {canManage && (
+          <CardHeaderAction>
+            <ManageButton />
+            {subscription.status === 'active' &&
+              !subscription.cancelAtPeriodEnd && (
+                <CancelButton periodEnd={periodEnd || ''} />
+              )}
+          </CardHeaderAction>
+        )}
       </CardHeader>
     </Card>
   );

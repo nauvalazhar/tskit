@@ -15,9 +15,9 @@ import type {
   NormalizedPaymentData,
 } from '@/core/drivers/payment/types';
 
-export async function getSubscriptionByUserId(userId: string) {
+export async function getSubscriptionByOrganizationId(organizationId: string) {
   return db.query.subscriptions.findFirst({
-    where: eq(subscriptions.userId, userId),
+    where: eq(subscriptions.organizationId, organizationId),
     with: { plan: true },
   });
 }
@@ -89,6 +89,7 @@ async function handleSubscriptionCreated(data: NormalizedSubscriptionData, chann
 
   await db.insert(subscriptions).values({
     userId: customer.userId,
+    organizationId: customer.organizationId,
     planId: plan.id,
     channel,
     externalId: data.id,
@@ -98,7 +99,7 @@ async function handleSubscriptionCreated(data: NormalizedSubscriptionData, chann
     cancelAtPeriodEnd: data.cancelAtPeriodEnd,
   });
 
-  // Send confirmation email
+  // Send confirmation email to the user who initiated the checkout
   const user = await db.query.users.findFirst({
     where: eq(users.id, customer.userId),
   });
@@ -162,7 +163,7 @@ async function handlePaymentFailed(data: NormalizedPaymentData) {
     .set({ status: 'past_due' })
     .where(eq(subscriptions.externalId, data.subscriptionId));
 
-  // Send failure email
+  // Send failure email to the user who initiated the subscription
   const sub = await getSubscriptionByExternalId(data.subscriptionId);
   if (!sub) return;
 

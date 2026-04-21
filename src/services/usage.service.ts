@@ -8,12 +8,12 @@ export interface Period {
 }
 
 export async function getUsageCount(
-  userId: string,
+  organizationId: string,
   featureKey: string,
   period: Period,
 ): Promise<number> {
   const record = await db.query.usage.findFirst({
-    where: and(eq(usage.userId, userId), eq(usage.featureKey, featureKey)),
+    where: and(eq(usage.organizationId, organizationId), eq(usage.featureKey, featureKey)),
   });
 
   if (!record) return 0;
@@ -36,18 +36,18 @@ export async function getUsageCount(
 }
 
 export async function incrementUsage(
-  userId: string,
+  organizationId: string,
   featureKey: string,
   period: Period,
   amount = 1,
 ): Promise<void> {
   const record = await db.query.usage.findFirst({
-    where: and(eq(usage.userId, userId), eq(usage.featureKey, featureKey)),
+    where: and(eq(usage.organizationId, organizationId), eq(usage.featureKey, featureKey)),
   });
 
   if (!record) {
     await db.insert(usage).values({
-      userId,
+      organizationId,
       featureKey,
       used: amount,
       periodStart: period.start,
@@ -70,12 +70,12 @@ export async function incrementUsage(
 }
 
 export async function decrementUsage(
-  userId: string,
+  organizationId: string,
   featureKey: string,
   amount = 1,
 ): Promise<void> {
   const record = await db.query.usage.findFirst({
-    where: and(eq(usage.userId, userId), eq(usage.featureKey, featureKey)),
+    where: and(eq(usage.organizationId, organizationId), eq(usage.featureKey, featureKey)),
   });
 
   if (!record) return;
@@ -86,9 +86,9 @@ export async function decrementUsage(
     .where(eq(usage.id, record.id));
 }
 
-export async function resetUsage(userId: string, featureKey: string): Promise<void> {
+export async function resetUsage(organizationId: string, featureKey: string): Promise<void> {
   await db
     .update(usage)
     .set({ used: 0 })
-    .where(and(eq(usage.userId, userId), eq(usage.featureKey, featureKey)));
+    .where(and(eq(usage.organizationId, organizationId), eq(usage.featureKey, featureKey)));
 }

@@ -28,10 +28,10 @@ class Payment {
     return scoped;
   }
 
-  async getOrCreateCustomer(userId: string) {
+  async getOrCreateCustomer(organizationId: string, userId: string) {
     const channel = this.channel || paymentConfig.default;
     const existing = await db.query.customers.findFirst({
-      where: and(eq(customers.userId, userId), eq(customers.channel, channel)),
+      where: and(eq(customers.organizationId, organizationId), eq(customers.channel, channel)),
     });
 
     if (existing) return existing;
@@ -45,13 +45,14 @@ class Payment {
     const result = await this.resolve().createCustomer({
       email: user.email,
       name: user.name,
-      metadata: { userId },
+      metadata: { organizationId, userId },
     });
 
     const [customer] = await db
       .insert(customers)
       .values({
         userId,
+        organizationId,
         channel,
         externalCustomerId: result.id,
       })
@@ -61,12 +62,13 @@ class Payment {
   }
 
   async checkout(
+    organizationId: string,
     userId: string,
     planId: string,
     urls: { success: string; cancel: string },
   ) {
     const channel = this.channel || paymentConfig.default;
-    const customer = await this.getOrCreateCustomer(userId);
+    const customer = await this.getOrCreateCustomer(organizationId, userId);
     const plan = await getPlanById(planId);
     if (!plan) throw new Error('Plan not found');
 
@@ -82,8 +84,8 @@ class Payment {
     });
   }
 
-  async portal(userId: string, returnUrl: string) {
-    const customer = await this.getOrCreateCustomer(userId);
+  async portal(organizationId: string, userId: string, returnUrl: string) {
+    const customer = await this.getOrCreateCustomer(organizationId, userId);
     return this.resolve().createPortalSession({
       customerId: customer.externalCustomerId,
       returnUrl,

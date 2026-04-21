@@ -1,11 +1,11 @@
 import { createMiddleware } from '@tanstack/react-start';
-import { authMiddleware } from './auth';
-import { getSubscriptionByUserId } from '@/services/subscription.service';
+import { orgMiddleware } from './org';
+import { getSubscriptionByOrganizationId } from '@/services/subscription.service';
 
 export const subscribedMiddleware = createMiddleware({ type: 'function' })
-  .middleware([authMiddleware])
+  .middleware([orgMiddleware])
   .server(async ({ next, context }) => {
-    const subscription = await getSubscriptionByUserId(context.user.id);
+    const subscription = await getSubscriptionByOrganizationId(context.organization.id);
 
     if (!subscription || !['active', 'trialing'].includes(subscription.status)) {
       throw new Error('Active subscription required');
