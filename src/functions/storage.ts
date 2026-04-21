@@ -3,9 +3,12 @@ import { z } from 'zod';
 import { storage } from '@/lib/storage';
 import { UPLOAD_ALLOWED_TYPES } from '@/lib/constants';
 import { authMiddleware } from '@/middleware/auth';
+import { createRateLimitMiddleware } from '@/middleware/rate-limit';
+
+const uploadRateLimit = createRateLimitMiddleware('upload');
 
 export const getAvatarUploadUrl = createServerFn({ method: 'POST' })
-  .middleware([authMiddleware])
+  .middleware([uploadRateLimit, authMiddleware])
   .inputValidator(z.object({ contentType: z.string().min(1), fileName: z.string().min(1) }))
   .handler(async ({ data }) => {
     if (!UPLOAD_ALLOWED_TYPES.includes(data.contentType)) {

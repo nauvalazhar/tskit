@@ -1,6 +1,7 @@
 import { createServerFn } from '@tanstack/react-start';
 import { z } from 'zod';
 import { authMiddleware } from '@/middleware/auth';
+import { createRateLimitMiddleware } from '@/middleware/rate-limit';
 import { listPlans } from '@/services/plan.service';
 import {
   getSubscriptionByUserId,
@@ -9,6 +10,8 @@ import {
 } from '@/services/subscription.service';
 import { payment } from '@/lib/payment';
 import type { PaymentChannel } from '@/config/payment';
+
+const defaultRateLimit = createRateLimitMiddleware('default');
 
 export const getPlans = createServerFn().handler(async () => {
   return listPlans();
@@ -21,7 +24,7 @@ export const getSubscription = createServerFn()
   });
 
 export const createCheckout = createServerFn({ method: 'POST' })
-  .middleware([authMiddleware])
+  .middleware([defaultRateLimit, authMiddleware])
   .inputValidator(z.object({ planId: z.string().min(1) }))
   .handler(async ({ data, context }) => {
     const baseUrl = process.env.VITE_APP_URL || 'http://localhost:3000';
@@ -33,7 +36,7 @@ export const createCheckout = createServerFn({ method: 'POST' })
   });
 
 export const createPortalSession = createServerFn({ method: 'POST' })
-  .middleware([authMiddleware])
+  .middleware([defaultRateLimit, authMiddleware])
   .inputValidator(z.object({ returnUrl: z.url() }))
   .handler(async ({ context, data }) => {
     return payment.portal(context.user.id, data.returnUrl);

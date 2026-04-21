@@ -2,16 +2,21 @@ import { auth } from '@/lib/auth';
 import { createServerFn } from '@tanstack/react-start';
 import { getRequestHeaders } from '@tanstack/react-start/server';
 import { authMiddleware } from '@/middleware/auth';
+import { createRateLimitMiddleware } from '@/middleware/rate-limit';
 
-export const getSession = createServerFn().handler(async () => {
-  const headers = await getRequestHeaders();
-  const session = await auth.api.getSession({ headers });
+const authRateLimit = createRateLimitMiddleware('auth');
 
-  return session;
-});
+export const getSession = createServerFn()
+  .middleware([authRateLimit])
+  .handler(async () => {
+    const headers = await getRequestHeaders();
+    const session = await auth.api.getSession({ headers });
+
+    return session;
+  });
 
 export const listUserAccounts = createServerFn()
-  .middleware([authMiddleware])
+  .middleware([authRateLimit, authMiddleware])
   .handler(async () => {
     const headers = await getRequestHeaders();
     const accounts = await auth.api.listUserAccounts({ headers });
@@ -20,7 +25,7 @@ export const listUserAccounts = createServerFn()
   });
 
 export const listSessions = createServerFn()
-  .middleware([authMiddleware])
+  .middleware([authRateLimit, authMiddleware])
   .handler(async () => {
     const headers = await getRequestHeaders();
     return await auth.api.listSessions({ headers });
