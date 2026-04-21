@@ -32,8 +32,8 @@ import {
   adminUnbanUser,
   adminSetRole,
   adminRemoveUser,
-} from '@/functions/admin';
-import { adminUserQuery } from '@/queries/admin.queries';
+} from '@/functions/admin/users';
+import { adminUserQuery } from '@/queries/admin/users.queries';
 import { toastManager } from '@/components/selia/toast';
 import { Strong } from '@/components/selia/text';
 import { authClient } from '@/lib/auth-client';

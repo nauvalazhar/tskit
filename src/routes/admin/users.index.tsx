@@ -1,6 +1,6 @@
 import { Suspense } from 'react';
 import { createFileRoute } from '@tanstack/react-router';
-import { adminUsersQuery } from '@/queries/admin.queries';
+import { adminUsersQuery } from '@/queries/admin/users.queries';
 import { UsersTable } from '@/components/admin/users-table';
 import { PageHeader } from '@/components/shared/page-header';
 import { usersSearchSchema } from '@/validations/admin';

@@ -21,8 +21,8 @@ import {
   DrawerDescription,
 } from '@/components/selia/drawer';
 import { Field, FieldLabel } from '@/components/selia/field';
-import { savePlanPrice, removePlanPrice } from '@/functions/admin';
-import { adminPaymentChannelsQuery } from '@/queries/admin.queries';
+import { savePlanPrice, removePlanPrice } from '@/functions/admin/plans';
+import { adminPaymentChannelsQuery } from '@/queries/admin/plans.queries';
 import type { PaymentChannel } from '@/config/payment';
 import {
   Item,

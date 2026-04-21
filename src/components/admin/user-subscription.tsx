@@ -10,7 +10,7 @@ import {
 } from '@/components/selia/card';
 import { Badge } from '@/components/selia/badge';
 import { Item, ItemContent, ItemTitle, ItemDescription, ItemAction } from '@/components/selia/item';
-import { adminUserQuery } from '@/queries/admin.queries';
+import { adminUserQuery } from '@/queries/admin/users.queries';
 import { getSubscriptionStatus } from '@/lib/utils';
 
 const routeApi = getRouteApi('/admin/users/$userId');

@@ -18,8 +18,8 @@ import {
   SelectItem,
 } from '@/components/selia/select';
 import { Button } from '@/components/selia/button';
-import { adminChangePlan } from '@/functions/admin';
-import { adminPlansQuery } from '@/queries/admin.queries';
+import { adminChangePlan } from '@/functions/admin/subscriptions';
+import { adminPlansQuery } from '@/queries/admin/plans.queries';
 import type { PaymentChannel } from '@/config/payment';
 import { Badge } from '@/components/selia/badge';
 

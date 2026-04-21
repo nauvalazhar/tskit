@@ -42,8 +42,8 @@ import {
 } from '@/components/selia/menu';
 import { getRouteApi } from '@tanstack/react-router';
 import { useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
-import { adminCancelSubscription, getSubscriptions } from '@/functions/admin';
-import { adminSubscriptionsQuery } from '@/queries/admin.queries';
+import { adminCancelSubscription, getSubscriptions } from '@/functions/admin/subscriptions';
+import { adminSubscriptionsQuery } from '@/queries/admin/subscriptions.queries';
 import { ChangePlanDialog } from './change-plan-dialog';
 import { SUBSCRIPTION_STATUSES } from '@/lib/constants';
 import { getSubscriptionStatus } from '@/lib/utils';

@@ -43,8 +43,8 @@ import {
   adminUnbanUser,
   adminRemoveUser,
   getUsers,
-} from '@/functions/admin';
-import { adminUsersQuery } from '@/queries/admin.queries';
+} from '@/functions/admin/users';
+import { adminUsersQuery } from '@/queries/admin/users.queries';
 import { authClient } from '@/lib/auth-client';
 import { EllipsisIcon, SearchIcon } from 'lucide-react';
 import { Card, CardBody, CardHeader } from '@/components/selia/card';

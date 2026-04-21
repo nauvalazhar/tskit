@@ -3,7 +3,7 @@ import { useSuspenseQuery } from '@tanstack/react-query';
 import {
   adminPlansQuery,
   adminPaymentChannelsQuery,
-} from '@/queries/admin.queries';
+} from '@/queries/admin/plans.queries';
 import { PlanForm } from '@/components/admin/plan-form';
 import { PageHeader } from '@/components/shared/page-header';
 import { Button } from '@/components/selia/button';

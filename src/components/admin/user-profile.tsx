@@ -9,7 +9,7 @@ import {
 } from '@/components/selia/card';
 import { Badge } from '@/components/selia/badge';
 import { UserAvatar } from '@/components/shared/user-avatar';
-import { adminUserQuery } from '@/queries/admin.queries';
+import { adminUserQuery } from '@/queries/admin/users.queries';
 
 const routeApi = getRouteApi('/admin/users/$userId');
 

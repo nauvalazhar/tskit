@@ -25,7 +25,7 @@ import {
 import { toastManager } from '@/components/selia/toast';
 import { EntitlementsEditor } from './entitlements-editor';
 import { PlanPricesEditor } from './plan-prices-editor';
-import { savePlan, getAllPlans } from '@/functions/admin';
+import { savePlan, getAllPlans } from '@/functions/admin/plans';
 import { slugify } from '@/lib/utils';
 import { CURRENCIES, BILLING_INTERVALS } from '@/lib/constants';
 import { useServerFn } from '@tanstack/react-start';

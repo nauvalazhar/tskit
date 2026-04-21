@@ -22,8 +22,8 @@ import {
 } from '@/components/selia/menu';
 import { getRouteApi, useNavigate } from '@tanstack/react-router';
 import { useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
-import { togglePlanActive, getAllPlans } from '@/functions/admin';
-import { adminPlansQuery } from '@/queries/admin.queries';
+import { togglePlanActive, getAllPlans } from '@/functions/admin/plans';
+import { adminPlansQuery } from '@/queries/admin/plans.queries';
 import { EllipsisIcon, SearchIcon } from 'lucide-react';
 import { Card, CardHeader, CardBody } from '@/components/selia/card';
 import { Input } from '@/components/selia/input';

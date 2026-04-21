@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
-import { adminPlansQuery } from '@/queries/admin.queries';
+import { adminPlansQuery } from '@/queries/admin/plans.queries';
 import { plansSearchSchema } from '@/validations/admin';
 import { PlansTable } from '@/components/admin/plans-table';
 import { PageHeader } from '@/components/shared/page-header';

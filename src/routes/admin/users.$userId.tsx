@@ -1,5 +1,5 @@
 import { createFileRoute, Link, notFound } from '@tanstack/react-router';
-import { adminUserQuery } from '@/queries/admin.queries';
+import { adminUserQuery } from '@/queries/admin/users.queries';
 import { Button } from '@/components/selia/button';
 import { UserProfile } from '@/components/admin/user-profile';
 import { UserSubscription } from '@/components/admin/user-subscription';
