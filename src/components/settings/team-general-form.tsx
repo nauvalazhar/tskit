@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useForm } from '@tanstack/react-form';
 import { useQueryClient } from '@tanstack/react-query';
+import { useRouter } from '@tanstack/react-router';
 import { Button } from '@/components/selia/button';
 import { Input } from '@/components/selia/input';
 import { Field, FieldLabel, FieldError } from '@/components/selia/field';
@@ -17,6 +18,7 @@ export function TeamGeneralForm({
 }) {
   const [pending, setPending] = useState(false);
   const queryClient = useQueryClient();
+  const router = useRouter();
 
   const form = useForm({
     defaultValues: { name: initialName, slug: initialSlug },
@@ -26,6 +28,7 @@ export function TeamGeneralForm({
       try {
         await updateTeam({ data: { name: value.name, slug: value.slug } });
         queryClient.invalidateQueries({ queryKey: ['teams'] });
+        await router.invalidate();
         toastManager.add({
           title: 'Team updated',
           description: 'Your team settings have been saved.',
