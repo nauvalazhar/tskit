@@ -10,6 +10,7 @@ import { TanStackDevtools } from '@tanstack/react-devtools';
 import { Toast } from '@/components/selia/toast';
 import { NotFound } from '@/components/shared/not-found';
 import { getSession } from '@/functions/auth';
+import { getActiveOrganization } from '@/functions/team';
 import { getUserSettings } from '@/functions/settings';
 import type { Theme } from '@/lib/theme';
 import { QueryClient } from '@tanstack/react-query';
@@ -26,7 +27,8 @@ export const Route = createRootRouteWithContext<{
   beforeLoad: async () => {
     const session = await getSession();
     const settings = session ? await getUserSettings() : {};
-    return { session, settings };
+    const activeOrganization = session ? await getActiveOrganization() : null;
+    return { session, settings, activeOrganization };
   },
   head: () => ({
     meta: [

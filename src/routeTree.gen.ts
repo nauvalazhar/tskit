@@ -15,6 +15,7 @@ import { Route as AuthRouteRouteImport } from './routes/_auth/route'
 import { Route as AppRouteRouteImport } from './routes/_app/route'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as MarketingIndexRouteImport } from './routes/_marketing/index'
+import { Route as InviteInvitationIdRouteImport } from './routes/invite.$invitationId'
 import { Route as AdminSubscriptionsRouteImport } from './routes/admin/subscriptions'
 import { Route as AdminAuditRouteImport } from './routes/admin/audit'
 import { Route as MarketingPricingRouteImport } from './routes/_marketing/pricing'
@@ -36,11 +37,14 @@ import { Route as ApiAuthSplatRouteImport } from './routes/api/auth.$'
 import { Route as AdminUsersUserIdRouteImport } from './routes/admin/users.$userId'
 import { Route as AdminPlansCreateRouteImport } from './routes/admin/plans.create'
 import { Route as AdminPlansPlanIdRouteImport } from './routes/admin/plans.$planId'
+import { Route as AppSettingsTeamRouteImport } from './routes/_app/settings.team'
 import { Route as AppSettingsSecurityRouteImport } from './routes/_app/settings.security'
 import { Route as AppSettingsPreferencesRouteImport } from './routes/_app/settings.preferences'
 import { Route as AppSettingsAdvancedRouteImport } from './routes/_app/settings.advanced'
 import { Route as AppSettingsActivityRouteImport } from './routes/_app/settings.activity'
 import { Route as AppBillingSuccessRouteImport } from './routes/_app/billing.success'
+import { Route as AppSettingsTeamIndexRouteImport } from './routes/_app/settings.team.index'
+import { Route as AppSettingsTeamMembersRouteImport } from './routes/_app/settings.team.members'
 
 const AdminRouteRoute = AdminRouteRouteImport.update({
   id: '/admin',
@@ -68,6 +72,11 @@ const MarketingIndexRoute = MarketingIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => MarketingRouteRoute,
+} as any)
+const InviteInvitationIdRoute = InviteInvitationIdRouteImport.update({
+  id: '/invite/$invitationId',
+  path: '/invite/$invitationId',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AdminSubscriptionsRoute = AdminSubscriptionsRouteImport.update({
   id: '/subscriptions',
@@ -174,6 +183,11 @@ const AdminPlansPlanIdRoute = AdminPlansPlanIdRouteImport.update({
   path: '/plans/$planId',
   getParentRoute: () => AdminRouteRoute,
 } as any)
+const AppSettingsTeamRoute = AppSettingsTeamRouteImport.update({
+  id: '/team',
+  path: '/team',
+  getParentRoute: () => AppSettingsRoute,
+} as any)
 const AppSettingsSecurityRoute = AppSettingsSecurityRouteImport.update({
   id: '/security',
   path: '/security',
@@ -199,6 +213,16 @@ const AppBillingSuccessRoute = AppBillingSuccessRouteImport.update({
   path: '/success',
   getParentRoute: () => AppBillingRoute,
 } as any)
+const AppSettingsTeamIndexRoute = AppSettingsTeamIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AppSettingsTeamRoute,
+} as any)
+const AppSettingsTeamMembersRoute = AppSettingsTeamMembersRouteImport.update({
+  id: '/members',
+  path: '/members',
+  getParentRoute: () => AppSettingsTeamRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof MarketingIndexRoute
@@ -214,12 +238,14 @@ export interface FileRoutesByFullPath {
   '/pricing': typeof MarketingPricingRoute
   '/admin/audit': typeof AdminAuditRoute
   '/admin/subscriptions': typeof AdminSubscriptionsRoute
+  '/invite/$invitationId': typeof InviteInvitationIdRoute
   '/admin/': typeof AdminIndexRoute
   '/billing/success': typeof AppBillingSuccessRoute
   '/settings/activity': typeof AppSettingsActivityRoute
   '/settings/advanced': typeof AppSettingsAdvancedRoute
   '/settings/preferences': typeof AppSettingsPreferencesRoute
   '/settings/security': typeof AppSettingsSecurityRoute
+  '/settings/team': typeof AppSettingsTeamRouteWithChildren
   '/admin/plans/$planId': typeof AdminPlansPlanIdRoute
   '/admin/plans/create': typeof AdminPlansCreateRoute
   '/admin/users/$userId': typeof AdminUsersUserIdRoute
@@ -230,6 +256,8 @@ export interface FileRoutesByFullPath {
   '/settings/': typeof AppSettingsIndexRoute
   '/admin/plans/': typeof AdminPlansIndexRoute
   '/admin/users/': typeof AdminUsersIndexRoute
+  '/settings/team/members': typeof AppSettingsTeamMembersRoute
+  '/settings/team/': typeof AppSettingsTeamIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof MarketingIndexRoute
@@ -242,6 +270,7 @@ export interface FileRoutesByTo {
   '/pricing': typeof MarketingPricingRoute
   '/admin/audit': typeof AdminAuditRoute
   '/admin/subscriptions': typeof AdminSubscriptionsRoute
+  '/invite/$invitationId': typeof InviteInvitationIdRoute
   '/admin': typeof AdminIndexRoute
   '/billing/success': typeof AppBillingSuccessRoute
   '/settings/activity': typeof AppSettingsActivityRoute
@@ -258,6 +287,8 @@ export interface FileRoutesByTo {
   '/settings': typeof AppSettingsIndexRoute
   '/admin/plans': typeof AdminPlansIndexRoute
   '/admin/users': typeof AdminUsersIndexRoute
+  '/settings/team/members': typeof AppSettingsTeamMembersRoute
+  '/settings/team': typeof AppSettingsTeamIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -276,6 +307,7 @@ export interface FileRoutesById {
   '/_marketing/pricing': typeof MarketingPricingRoute
   '/admin/audit': typeof AdminAuditRoute
   '/admin/subscriptions': typeof AdminSubscriptionsRoute
+  '/invite/$invitationId': typeof InviteInvitationIdRoute
   '/_marketing/': typeof MarketingIndexRoute
   '/admin/': typeof AdminIndexRoute
   '/_app/billing/success': typeof AppBillingSuccessRoute
@@ -283,6 +315,7 @@ export interface FileRoutesById {
   '/_app/settings/advanced': typeof AppSettingsAdvancedRoute
   '/_app/settings/preferences': typeof AppSettingsPreferencesRoute
   '/_app/settings/security': typeof AppSettingsSecurityRoute
+  '/_app/settings/team': typeof AppSettingsTeamRouteWithChildren
   '/admin/plans/$planId': typeof AdminPlansPlanIdRoute
   '/admin/plans/create': typeof AdminPlansCreateRoute
   '/admin/users/$userId': typeof AdminUsersUserIdRoute
@@ -293,6 +326,8 @@ export interface FileRoutesById {
   '/_app/settings/': typeof AppSettingsIndexRoute
   '/admin/plans/': typeof AdminPlansIndexRoute
   '/admin/users/': typeof AdminUsersIndexRoute
+  '/_app/settings/team/members': typeof AppSettingsTeamMembersRoute
+  '/_app/settings/team/': typeof AppSettingsTeamIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -310,12 +345,14 @@ export interface FileRouteTypes {
     | '/pricing'
     | '/admin/audit'
     | '/admin/subscriptions'
+    | '/invite/$invitationId'
     | '/admin/'
     | '/billing/success'
     | '/settings/activity'
     | '/settings/advanced'
     | '/settings/preferences'
     | '/settings/security'
+    | '/settings/team'
     | '/admin/plans/$planId'
     | '/admin/plans/create'
     | '/admin/users/$userId'
@@ -326,6 +363,8 @@ export interface FileRouteTypes {
     | '/settings/'
     | '/admin/plans/'
     | '/admin/users/'
+    | '/settings/team/members'
+    | '/settings/team/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -338,6 +377,7 @@ export interface FileRouteTypes {
     | '/pricing'
     | '/admin/audit'
     | '/admin/subscriptions'
+    | '/invite/$invitationId'
     | '/admin'
     | '/billing/success'
     | '/settings/activity'
@@ -354,6 +394,8 @@ export interface FileRouteTypes {
     | '/settings'
     | '/admin/plans'
     | '/admin/users'
+    | '/settings/team/members'
+    | '/settings/team'
   id:
     | '__root__'
     | '/_app'
@@ -371,6 +413,7 @@ export interface FileRouteTypes {
     | '/_marketing/pricing'
     | '/admin/audit'
     | '/admin/subscriptions'
+    | '/invite/$invitationId'
     | '/_marketing/'
     | '/admin/'
     | '/_app/billing/success'
@@ -378,6 +421,7 @@ export interface FileRouteTypes {
     | '/_app/settings/advanced'
     | '/_app/settings/preferences'
     | '/_app/settings/security'
+    | '/_app/settings/team'
     | '/admin/plans/$planId'
     | '/admin/plans/create'
     | '/admin/users/$userId'
@@ -388,6 +432,8 @@ export interface FileRouteTypes {
     | '/_app/settings/'
     | '/admin/plans/'
     | '/admin/users/'
+    | '/_app/settings/team/members'
+    | '/_app/settings/team/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -395,6 +441,7 @@ export interface RootRouteChildren {
   AuthRouteRoute: typeof AuthRouteRouteWithChildren
   MarketingRouteRoute: typeof MarketingRouteRouteWithChildren
   AdminRouteRoute: typeof AdminRouteRouteWithChildren
+  InviteInvitationIdRoute: typeof InviteInvitationIdRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiWebhooksPolarRoute: typeof ApiWebhooksPolarRoute
   ApiWebhooksStripeRoute: typeof ApiWebhooksStripeRoute
@@ -443,6 +490,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof MarketingIndexRouteImport
       parentRoute: typeof MarketingRouteRoute
+    }
+    '/invite/$invitationId': {
+      id: '/invite/$invitationId'
+      path: '/invite/$invitationId'
+      fullPath: '/invite/$invitationId'
+      preLoaderRoute: typeof InviteInvitationIdRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/admin/subscriptions': {
       id: '/admin/subscriptions'
@@ -591,6 +645,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminPlansPlanIdRouteImport
       parentRoute: typeof AdminRouteRoute
     }
+    '/_app/settings/team': {
+      id: '/_app/settings/team'
+      path: '/team'
+      fullPath: '/settings/team'
+      preLoaderRoute: typeof AppSettingsTeamRouteImport
+      parentRoute: typeof AppSettingsRoute
+    }
     '/_app/settings/security': {
       id: '/_app/settings/security'
       path: '/security'
@@ -626,6 +687,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppBillingSuccessRouteImport
       parentRoute: typeof AppBillingRoute
     }
+    '/_app/settings/team/': {
+      id: '/_app/settings/team/'
+      path: '/'
+      fullPath: '/settings/team/'
+      preLoaderRoute: typeof AppSettingsTeamIndexRouteImport
+      parentRoute: typeof AppSettingsTeamRoute
+    }
+    '/_app/settings/team/members': {
+      id: '/_app/settings/team/members'
+      path: '/members'
+      fullPath: '/settings/team/members'
+      preLoaderRoute: typeof AppSettingsTeamMembersRouteImport
+      parentRoute: typeof AppSettingsTeamRoute
+    }
   }
 }
 
@@ -643,11 +718,26 @@ const AppBillingRouteWithChildren = AppBillingRoute._addFileChildren(
   AppBillingRouteChildren,
 )
 
+interface AppSettingsTeamRouteChildren {
+  AppSettingsTeamMembersRoute: typeof AppSettingsTeamMembersRoute
+  AppSettingsTeamIndexRoute: typeof AppSettingsTeamIndexRoute
+}
+
+const AppSettingsTeamRouteChildren: AppSettingsTeamRouteChildren = {
+  AppSettingsTeamMembersRoute: AppSettingsTeamMembersRoute,
+  AppSettingsTeamIndexRoute: AppSettingsTeamIndexRoute,
+}
+
+const AppSettingsTeamRouteWithChildren = AppSettingsTeamRoute._addFileChildren(
+  AppSettingsTeamRouteChildren,
+)
+
 interface AppSettingsRouteChildren {
   AppSettingsActivityRoute: typeof AppSettingsActivityRoute
   AppSettingsAdvancedRoute: typeof AppSettingsAdvancedRoute
   AppSettingsPreferencesRoute: typeof AppSettingsPreferencesRoute
   AppSettingsSecurityRoute: typeof AppSettingsSecurityRoute
+  AppSettingsTeamRoute: typeof AppSettingsTeamRouteWithChildren
   AppSettingsIndexRoute: typeof AppSettingsIndexRoute
 }
 
@@ -656,6 +746,7 @@ const AppSettingsRouteChildren: AppSettingsRouteChildren = {
   AppSettingsAdvancedRoute: AppSettingsAdvancedRoute,
   AppSettingsPreferencesRoute: AppSettingsPreferencesRoute,
   AppSettingsSecurityRoute: AppSettingsSecurityRoute,
+  AppSettingsTeamRoute: AppSettingsTeamRouteWithChildren,
   AppSettingsIndexRoute: AppSettingsIndexRoute,
 }
 
@@ -744,6 +835,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRouteRoute: AuthRouteRouteWithChildren,
   MarketingRouteRoute: MarketingRouteRouteWithChildren,
   AdminRouteRoute: AdminRouteRouteWithChildren,
+  InviteInvitationIdRoute: InviteInvitationIdRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiWebhooksPolarRoute: ApiWebhooksPolarRoute,
   ApiWebhooksStripeRoute: ApiWebhooksStripeRoute,

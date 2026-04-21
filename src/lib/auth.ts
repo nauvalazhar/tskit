@@ -3,9 +3,11 @@ import type { BetterAuthOptions } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { twoFactor } from 'better-auth/plugins/two-factor';
 import { admin } from 'better-auth/plugins/admin';
-import { eq } from 'drizzle-orm';
+import { organization } from 'better-auth/plugins/organization';
+import { eq, asc, and } from 'drizzle-orm';
 import { db } from '@/database';
-import { users } from '@/database/schemas/auth';
+import { users, members } from '@/database/schemas/auth';
+import { userSettings } from '@/database/schemas/settings';
 import { tanstackStartCookies } from 'better-auth/tanstack-start';
 import { mailer } from '@/lib/mailer';
 import { storage } from '@/lib/storage';
@@ -38,6 +40,51 @@ const options = {
           await mailer.send('password-changed', user.email, {
             name: user.name,
           });
+        },
+      },
+    },
+    session: {
+      create: {
+        before: async (session) => {
+          if (session.activeOrganizationId) return { data: session };
+
+          const userId = session.userId as string;
+          const memberships = await db.query.members.findMany({
+            where: eq(members.userId, userId),
+            orderBy: asc(members.createdAt),
+          });
+
+          if (memberships.length === 0) return { data: session };
+
+          let orgId = memberships[0].organizationId;
+
+          // If multiple orgs, check last used preference
+          if (memberships.length > 1) {
+            const pref = await db.query.userSettings.findFirst({
+              where: and(
+                eq(userSettings.userId, userId),
+                eq(userSettings.key, 'lastActiveOrganizationId'),
+              ),
+            });
+
+            if (pref && memberships.some((m) => m.organizationId === pref.value)) {
+              orgId = pref.value;
+            }
+          }
+
+          return {
+            data: { ...session, activeOrganizationId: orgId },
+          };
+        },
+      },
+    },
+    user: {
+      create: {
+        after: async (user) => {
+          // Auto-create a personal team for every new user.
+          // We use auth.api after auth is initialized (lazy reference via exported `auth`).
+          const { createPersonalTeam } = await import('@/lib/team');
+          await createPersonalTeam(user.id, user.name);
         },
       },
     },
@@ -94,6 +141,31 @@ const options = {
     tanstackStartCookies(),
     twoFactor(),
     admin(),
+    organization({
+      allowUserToCreateOrganization: true,
+      organizationLimit: 5,
+      creatorRole: 'owner',
+      invitationExpiresIn: 60 * 60 * 48, // 48 hours
+      sendInvitationEmail: async ({ invitation, organization, inviter }) => {
+        console.log('[sendInvitationEmail] sending to:', invitation.email, 'org:', organization.name);
+        try {
+          await mailer.send('team-invitation', invitation.email, {
+            teamName: organization.name,
+            inviterName: inviter.user.name,
+            inviterEmail: inviter.user.email,
+            acceptUrl: `${process.env.VITE_APP_URL || 'http://localhost:3000'}/invite/${invitation.id}`,
+          });
+          console.log('[sendInvitationEmail] sent successfully');
+        } catch (err) {
+          console.error('[sendInvitationEmail] failed:', err);
+        }
+      },
+      organizationHooks: {
+        afterCreateOrganization: async ({ organization, member, user }) => {
+          // no-op — hook available for future use
+        },
+      },
+    }),
   ],
 } satisfies BetterAuthOptions;
 
@@ -102,13 +174,19 @@ export const auth = betterAuth({
   plugins: [
     ...(options.plugins ?? []),
     customSession(async ({ user, session }) => {
-      const subscription = await db.query.subscriptions.findFirst({
-        where: eq(subscriptions.userId, user.id),
-        with: { plan: true },
-      });
+      const orgId = session.activeOrganizationId;
+      const subscription = orgId
+        ? await db.query.subscriptions.findFirst({
+            where: eq(subscriptions.organizationId, orgId),
+            with: { plan: true },
+          })
+        : undefined;
 
       return {
-        session,
+        session: {
+          ...session,
+          activeOrganizationId: orgId ?? null,
+        },
         user: {
           ...user,
           subscription,

@@ -7,7 +7,7 @@ import {
   Outlet,
   useLocation,
 } from '@tanstack/react-router';
-import { ActivityIcon, LockIcon, Settings2Icon, ShieldIcon, UserIcon } from 'lucide-react';
+import { ActivityIcon, LockIcon, Settings2Icon, ShieldIcon, UserIcon, UsersIcon } from 'lucide-react';
 
 export const Route = createFileRoute('/_app/settings')({
   component: RouteComponent,
@@ -15,12 +15,16 @@ export const Route = createFileRoute('/_app/settings')({
 
 function RouteComponent() {
   const { pathname } = useLocation();
+  // Normalize team sub-routes so the "Team" tab stays highlighted
+  const tabValue = pathname.startsWith('/settings/team')
+    ? '/settings/team'
+    : pathname;
 
   return (
     <>
       <PageHeader>
         <Heading>Settings</Heading>
-        <Tabline value={pathname}>
+        <Tabline value={tabValue}>
           <TablineList>
             <TablineItem
               nativeButton={false}
@@ -45,6 +49,14 @@ function RouteComponent() {
             >
               <ShieldIcon />
               Security
+            </TablineItem>
+            <TablineItem
+              nativeButton={false}
+              value="/settings/team"
+              render={<Link to="/settings/team" />}
+            >
+              <UsersIcon />
+              Team
             </TablineItem>
             <TablineItem
               nativeButton={false}

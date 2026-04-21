@@ -3,6 +3,7 @@ import {
   adminClient,
   customSessionClient,
   twoFactorClient,
+  organizationClient,
 } from 'better-auth/client/plugins';
 import type { auth } from '@/lib/auth';
 
@@ -15,6 +16,7 @@ export const authClient = createAuthClient({
       },
     }),
     adminClient(),
+    organizationClient(),
     customSessionClient<typeof auth>(),
   ],
 });

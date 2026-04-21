@@ -32,8 +32,8 @@ class Mailer {
   ): Promise<{ id: string }> {
     const { component, subject: subjectFn } = await loadTemplate(template);
     const subject =
-      typeof subjectFn === 'function' ? subjectFn() : subjectFn;
-    const html = await render(component(data as any));
+      typeof subjectFn === 'function' ? subjectFn(data) : subjectFn;
+    const html = await render(component(data));
 
     return this.resolve().send({ to, subject, html });
   }

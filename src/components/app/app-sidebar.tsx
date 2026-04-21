@@ -1,3 +1,6 @@
+import { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { useRouteContext } from '@tanstack/react-router';
 import {
   Sidebar,
   SidebarContent,
@@ -12,9 +15,11 @@ import {
 } from '@/components/selia/sidebar';
 import {
   ChevronsUpDownIcon,
+  CheckIcon,
   CreditCardIcon,
   HomeIcon,
   LogOutIcon,
+  PlusIcon,
   SettingsIcon,
   UserIcon,
 } from 'lucide-react';
@@ -24,9 +29,13 @@ import {
   MenuItem,
   MenuTrigger,
   MenuSeparator,
+  MenuGroup,
+  MenuGroupLabel,
 } from '@/components/selia/menu';
 import { authClient } from '@/lib/auth-client';
+import { setActiveTeam } from '@/functions/team';
 import { UserAvatar } from '../shared/user-avatar';
+import { CreateTeamDialog } from './create-team-dialog';
 import { Link } from '@tanstack/react-router';
 
 export function AppSidebar() {
@@ -77,6 +86,10 @@ export function AppSidebar() {
 
 function UserMenu() {
   const { data: session, error } = authClient.useSession();
+  const { activeOrganization } = useRouteContext({ from: '__root__' });
+  const { data: orgs } = authClient.useListOrganizations();
+  const queryClient = useQueryClient();
+  const [createOpen, setCreateOpen] = useState(false);
 
   if (!session || error) {
     return null;
@@ -84,44 +97,73 @@ function UserMenu() {
 
   const user = session.user;
 
+  const handleSwitch = async (orgId: string) => {
+    await setActiveTeam({ data: { organizationId: orgId } });
+    queryClient.invalidateQueries({ queryKey: ['teams'] });
+    window.location.reload();
+  };
+
   return (
-    <Menu>
-      <MenuTrigger
-        data-slot="sidebar-item-button"
-        render={
-          <SidebarItemButton>
-            <UserAvatar name={user.name} image={user.image || ''} />
-            <div className="flex flex-col overflow-hidden">
-              <span className="font-medium">{user.name}</span>
-              <span className="text-sm text-muted truncate">
-                {user.subscription?.plan.name || 'Free Plan'}
-              </span>
-            </div>
-            <ChevronsUpDownIcon className="ml-auto shrink-0" />
-          </SidebarItemButton>
-        }
-      />
-      <MenuPopup className="w-(--anchor-width)" side="top">
-        <MenuItem render={<Link to="/settings" />}>
-          <UserIcon />
-          Profile
-        </MenuItem>
-        <MenuItem render={<Link to="/settings" />}>
-          <SettingsIcon />
-          Settings
-        </MenuItem>
-        <MenuSeparator />
-        <MenuItem
-          onClick={async () => {
-            await authClient.signOut();
-            // you can swap this with client-side navigation
-            window.location.href = '/login';
-          }}
-        >
-          <LogOutIcon />
-          Logout
-        </MenuItem>
-      </MenuPopup>
-    </Menu>
+    <>
+      <Menu>
+        <MenuTrigger
+          data-slot="sidebar-item-button"
+          render={
+            <SidebarItemButton>
+              <UserAvatar name={user.name} image={user.image || ''} />
+              <div className="flex flex-col overflow-hidden">
+                <span className="font-medium">{user.name}</span>
+                <span className="text-sm text-muted truncate">
+                  {activeOrganization?.name ?? 'No team'}
+                </span>
+              </div>
+              <ChevronsUpDownIcon className="ml-auto shrink-0" />
+            </SidebarItemButton>
+          }
+        />
+        <MenuPopup className="w-(--anchor-width)" side="top">
+          <MenuItem render={<Link to="/settings" />}>
+            <UserIcon />
+            Profile
+          </MenuItem>
+          <MenuItem render={<Link to="/settings" />}>
+            <SettingsIcon />
+            Settings
+          </MenuItem>
+          <MenuSeparator />
+          <MenuGroup>
+            <MenuGroupLabel>Team</MenuGroupLabel>
+            {orgs?.map((org) => (
+              <MenuItem
+                key={org.id}
+                onClick={() => handleSwitch(org.id)}
+                className="justify-between"
+              >
+                <span className="truncate">{org.name}</span>
+                {org.id === activeOrganization?.id && (
+                  <CheckIcon className="size-4 text-primary shrink-0" />
+                )}
+              </MenuItem>
+            ))}
+            <MenuItem onClick={() => setCreateOpen(true)}>
+              <PlusIcon className="size-4" />
+              Create team
+            </MenuItem>
+          </MenuGroup>
+          <MenuSeparator />
+          <MenuItem
+            onClick={async () => {
+              await authClient.signOut();
+              window.location.href = '/login';
+            }}
+          >
+            <LogOutIcon />
+            Logout
+          </MenuItem>
+        </MenuPopup>
+      </Menu>
+
+      <CreateTeamDialog open={createOpen} onOpenChange={setCreateOpen} />
+    </>
   );
 }
