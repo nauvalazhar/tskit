@@ -1,14 +1,13 @@
 'use client';
 
-import { Form as BaseForm } from '@base-ui/react/form';
 import { cn } from '@/lib/utils.ts';
 
 export function Form({
   className,
   ...props
-}: React.ComponentProps<typeof BaseForm>) {
+}: React.ComponentProps<'form'>) {
   return (
-    <BaseForm
+    <form
       data-slot="form"
       className={cn('flex flex-col gap-6', className)}
       {...props}

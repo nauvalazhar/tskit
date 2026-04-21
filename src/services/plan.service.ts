@@ -1,6 +1,7 @@
 import { eq, asc, and } from 'drizzle-orm';
 import { db } from '@/database';
 import { plans, planPrices } from '@/database/schemas/billing';
+import type { PaymentChannel } from '@/config/payment';
 
 export async function listPlans() {
   return db.query.plans.findMany({
@@ -24,7 +25,7 @@ export async function getPlanByExternalPriceId(priceId: string) {
   return price?.plan ?? null;
 }
 
-export async function getPlanPrice(planId: string, channel: string) {
+export async function getPlanPrice(planId: string, channel: PaymentChannel) {
   return db.query.planPrices.findFirst({
     where: and(eq(planPrices.planId, planId), eq(planPrices.channel, channel)),
   });
@@ -39,6 +40,7 @@ export async function upsertPlan(data: {
   interval: string;
   entitlements?: Record<string, boolean | number>;
   sortOrder?: number;
+  popular?: boolean;
   active?: boolean;
 }) {
   const [plan] = await db
@@ -52,6 +54,7 @@ export async function upsertPlan(data: {
       interval: data.interval,
       entitlements: data.entitlements ?? {},
       sortOrder: data.sortOrder ?? 0,
+      popular: data.popular ?? false,
       active: data.active ?? true,
     })
     .onConflictDoUpdate({
@@ -64,6 +67,7 @@ export async function upsertPlan(data: {
         interval: data.interval,
         entitlements: data.entitlements ?? {},
         sortOrder: data.sortOrder ?? 0,
+        popular: data.popular ?? false,
         active: data.active ?? true,
       },
     })
@@ -74,7 +78,7 @@ export async function upsertPlan(data: {
 
 export async function upsertPlanPrice(data: {
   planId: string;
-  channel: string;
+  channel: PaymentChannel;
   externalProductId: string;
   externalPriceId: string;
 }) {

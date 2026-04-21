@@ -1,9 +1,12 @@
-export interface PaymentDriverConfig {
-  driver: string;
-  secretKey: string;
-  webhookSecret: string;
-  publicKey?: string;
-}
+import { z } from 'zod';
+
+export const paymentDriverConfigSchema = z.object({
+  driver: z.string(),
+  secretKey: z.string().min(1),
+  webhookSecret: z.string().min(1),
+  publicKey: z.string().optional(),
+});
+export type PaymentDriverConfig = z.infer<typeof paymentDriverConfigSchema>;
 
 export interface CreateCustomerParams {
   email: string;

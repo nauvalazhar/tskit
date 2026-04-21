@@ -1,6 +1,7 @@
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { UAParser } from 'ua-parser-js';
+import { SUBSCRIPTION_STATUSES } from '@/lib/constants';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -73,6 +74,17 @@ export function formatEntitlement(
   }
 
   return null;
+}
+
+export function slugify(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
+}
+
+export function getSubscriptionStatus(status: string) {
+  return SUBSCRIPTION_STATUSES[status];
 }
 
 export function formatFileSize(bytes: number): string {

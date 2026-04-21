@@ -14,7 +14,7 @@ export const headingVariants = cva('font-semibold text-foreground', {
     },
   },
   defaultVariants: {
-    size: 'md',
+    size: 'lg',
   },
 });
 

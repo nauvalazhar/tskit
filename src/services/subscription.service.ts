@@ -8,6 +8,7 @@ import {
 import { users } from '@/database/schemas/auth';
 import { mailer } from '@/lib/mailer';
 import { getPlanByExternalPriceId } from './plan.service';
+import type { PaymentChannel } from '@/config/payment';
 import type {
   WebhookEvent,
   NormalizedSubscriptionData,
@@ -41,7 +42,7 @@ export async function updateSubscriptionPlan(externalId: string, planId: string)
     .where(eq(subscriptions.externalId, externalId));
 }
 
-export async function handleWebhookEvent(event: WebhookEvent, channel: string) {
+export async function handleWebhookEvent(event: WebhookEvent, channel: PaymentChannel) {
   // Idempotency check
   const existing = await db.query.webhookEvents.findFirst({
     where: eq(webhookEvents.externalId, event.id),
@@ -75,7 +76,7 @@ export async function handleWebhookEvent(event: WebhookEvent, channel: string) {
   });
 }
 
-async function handleSubscriptionCreated(data: NormalizedSubscriptionData, channel: string) {
+async function handleSubscriptionCreated(data: NormalizedSubscriptionData, channel: PaymentChannel) {
   const customer = await db.query.customers.findFirst({
     where: eq(customers.externalCustomerId, data.customerId),
   });
@@ -110,7 +111,7 @@ async function handleSubscriptionCreated(data: NormalizedSubscriptionData, chann
   }
 }
 
-async function handleSubscriptionUpdated(data: NormalizedSubscriptionData, channel: string) {
+async function handleSubscriptionUpdated(data: NormalizedSubscriptionData, channel: PaymentChannel) {
   const existing = await getSubscriptionByExternalId(data.id);
 
   if (!existing) {

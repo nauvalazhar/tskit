@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useForm } from '@tanstack/react-form';
 import { Button } from '@/components/selia/button';
 import {
   Card,
@@ -24,36 +25,34 @@ export function LoginForm() {
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
-  const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setError(null);
-    setPending(true);
+  const form = useForm({
+    defaultValues: {
+      email: '',
+      password: '',
+    },
+    onSubmit: async ({ value }) => {
+      setError(null);
+      setPending(true);
 
-    const formData = new FormData(e.currentTarget);
-    const email = formData.get('email') as string;
-    const password = formData.get('password') as string;
+      const { error } = await authClient.signIn.email({
+        email: value.email,
+        password: value.password,
+      });
 
-    const { error } = await authClient.signIn.email({
-      email,
-      password,
-    });
+      setPending(false);
 
-    setPending(false);
-
-    if (error) {
-      if (error.status === 302 || error.code === 'TWO_FACTOR_REQUIRED') {
-        router.navigate({
-          to: '/verify-2fa',
-        });
+      if (error) {
+        if (error.status === 302 || error.code === 'TWO_FACTOR_REQUIRED') {
+          router.navigate({ to: '/verify-2fa' });
+          return;
+        }
+        setError(error.message || 'Invalid email or password.');
         return;
       }
 
-      setError(error.message || 'Invalid email or password.');
-      return;
-    }
-
-    router.navigate({ to: '/dashboard' });
-  };
+      router.navigate({ to: '/dashboard' });
+    },
+  });
 
   return (
     <div className="w-full lg:h-screen flex items-center justify-center p-4">
@@ -72,40 +71,80 @@ export function LoginForm() {
           <Divider variant="center" className="my-2">
             Or continue with email
           </Divider>
-          <Form onSubmit={handleLogin}>
-            <Field>
-              <FieldLabel htmlFor="email">Email</FieldLabel>
-              <Input
-                id="email"
-                name="email"
-                type="email"
-                placeholder="Enter your email"
-                required
-              />
-              <FieldError match="typeMismatch">
-                Please enter a valid email
-              </FieldError>
-              <FieldError match="valueMissing">Email is required</FieldError>
-            </Field>
-            <Field>
-              <div className="flex items-center">
-                <FieldLabel htmlFor="password">Password</FieldLabel>
-                <TextLink
-                  className="ml-auto"
-                  render={<Link to="/forgot-password" />}
-                >
-                  Forgot password?
-                </TextLink>
-              </div>
-              <Input
-                id="password"
-                name="password"
-                type="password"
-                placeholder="Enter your password"
-                required
-              />
-              <FieldError match="valueMissing">Password is required</FieldError>
-            </Field>
+          <Form
+            onSubmit={(e) => {
+              e.preventDefault();
+              form.handleSubmit();
+            }}
+          >
+            <form.Field
+              name="email"
+              validators={{
+                onSubmit: ({ value }) =>
+                  !value
+                    ? 'Email is required'
+                    : !/\S+@\S+\.\S+/.test(value)
+                      ? 'Please enter a valid email'
+                      : undefined,
+                onChange: ({ value }) =>
+                  !value
+                    ? 'Email is required'
+                    : !/\S+@\S+\.\S+/.test(value)
+                      ? 'Please enter a valid email'
+                      : undefined,
+              }}
+            >
+              {(field) => (
+                <Field>
+                  <FieldLabel htmlFor="email">Email</FieldLabel>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="Enter your email"
+                    value={field.state.value}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    onBlur={field.handleBlur}
+                  />
+                  {field.state.meta.errors.map((err, i) => (
+                    <FieldError key={i}>{err}</FieldError>
+                  ))}
+                </Field>
+              )}
+            </form.Field>
+            <form.Field
+              name="password"
+              validators={{
+                onSubmit: ({ value }) =>
+                  !value ? 'Password is required' : undefined,
+                onChange: ({ value }) =>
+                  !value ? 'Password is required' : undefined,
+              }}
+            >
+              {(field) => (
+                <Field>
+                  <div className="flex items-center">
+                    <FieldLabel htmlFor="password">Password</FieldLabel>
+                    <TextLink
+                      className="ml-auto"
+                      render={<Link to="/forgot-password" />}
+                    >
+                      Forgot password?
+                    </TextLink>
+                  </div>
+                  <Input
+                    id="password"
+                    type="password"
+                    placeholder="Enter your password"
+                    value={field.state.value}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    onBlur={field.handleBlur}
+                  />
+                  {field.state.meta.errors.map((err, i) => (
+                    <FieldError key={i}>{err}</FieldError>
+                  ))}
+                </Field>
+              )}
+            </form.Field>
             {error && (
               <Alert variant="danger">
                 <CircleAlert />

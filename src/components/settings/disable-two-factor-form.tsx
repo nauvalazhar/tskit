@@ -1,4 +1,5 @@
-import { useRef, useState } from 'react';
+import { useState } from 'react';
+import { useForm } from '@tanstack/react-form';
 import { Button } from '@/components/selia/button';
 import { Input } from '@/components/selia/input';
 import { Field, FieldError, FieldLabel } from '@/components/selia/field';
@@ -8,40 +9,42 @@ import { authClient } from '@/lib/auth-client';
 import { toastManager } from '@/components/selia/toast';
 import { TriangleAlert } from 'lucide-react';
 
-export function DisableTwoFactorForm({ onSuccess }: { onSuccess: () => void }) {
+export function DisableTwoFactorForm({
+  onSuccess,
+}: {
+  onSuccess: () => void;
+}) {
   const [pending, setPending] = useState(false);
-  const formRef = useRef<HTMLFormElement>(null);
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setPending(true);
+  const form = useForm({
+    defaultValues: { password: '' },
+    onSubmit: async ({ value }) => {
+      setPending(true);
 
-    const formData = new FormData(e.currentTarget);
-    const password = formData.get('password') as string;
-
-    const { error } = await authClient.twoFactor.disable({
-      password,
-    });
-
-    setPending(false);
-
-    if (error) {
-      toastManager.add({
-        title: 'Error',
-        description: error.message || 'Failed to disable 2FA.',
-        type: 'error',
+      const { error } = await authClient.twoFactor.disable({
+        password: value.password,
       });
-      return;
-    }
 
-    toastManager.add({
-      title: '2FA Disabled',
-      description: 'Two-factor authentication has been disabled.',
-      type: 'success',
-    });
+      setPending(false);
 
-    onSuccess();
-  };
+      if (error) {
+        toastManager.add({
+          title: 'Error',
+          description: error.message || 'Failed to disable 2FA.',
+          type: 'error',
+        });
+        return;
+      }
+
+      toastManager.add({
+        title: '2FA Disabled',
+        description: 'Two-factor authentication has been disabled.',
+        type: 'success',
+      });
+
+      onSuccess();
+    },
+  });
 
   return (
     <div className="flex flex-col gap-4">
@@ -53,18 +56,38 @@ export function DisableTwoFactorForm({ onSuccess }: { onSuccess: () => void }) {
           secure.
         </AlertDescription>
       </Alert>
-      <Form ref={formRef} onSubmit={handleSubmit}>
-        <Field>
-          <FieldLabel htmlFor="disable-2fa-password">Password</FieldLabel>
-          <Input
-            id="disable-2fa-password"
-            name="password"
-            type="password"
-            placeholder="Enter your password to confirm"
-            required
-          />
-          <FieldError match="valueMissing">Password is required</FieldError>
-        </Field>
+      <Form
+        onSubmit={(e) => {
+          e.preventDefault();
+          form.handleSubmit();
+        }}
+      >
+        <form.Field
+          name="password"
+          validators={{
+            onSubmit: ({ value }) =>
+              !value ? 'Password is required' : undefined,
+            onChange: ({ value }) =>
+              !value ? 'Password is required' : undefined,
+          }}
+        >
+          {(field) => (
+            <Field>
+              <FieldLabel htmlFor="disable-2fa-password">Password</FieldLabel>
+              <Input
+                id="disable-2fa-password"
+                type="password"
+                placeholder="Enter your password to confirm"
+                value={field.state.value}
+                onChange={(e) => field.handleChange(e.target.value)}
+                onBlur={field.handleBlur}
+              />
+              {field.state.meta.errors.map((err, i) => (
+                <FieldError key={i}>{err}</FieldError>
+              ))}
+            </Field>
+          )}
+        </form.Field>
         <Button variant="danger" progress={pending} type="submit">
           Disable 2FA
         </Button>

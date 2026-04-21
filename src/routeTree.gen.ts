@@ -15,6 +15,7 @@ import { Route as AuthRouteRouteImport } from './routes/_auth/route'
 import { Route as AppRouteRouteImport } from './routes/_app/route'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as MarketingIndexRouteImport } from './routes/_marketing/index'
+import { Route as AdminSubscriptionsRouteImport } from './routes/admin/subscriptions'
 import { Route as MarketingPricingRouteImport } from './routes/_marketing/pricing'
 import { Route as AuthVerify2faRouteImport } from './routes/_auth/verify-2fa'
 import { Route as AuthResetPasswordRouteImport } from './routes/_auth/reset-password'
@@ -24,11 +25,16 @@ import { Route as AuthForgotPasswordRouteImport } from './routes/_auth/forgot-pa
 import { Route as AppSettingsRouteImport } from './routes/_app/settings'
 import { Route as AppDashboardRouteImport } from './routes/_app/dashboard'
 import { Route as AppBillingRouteImport } from './routes/_app/billing'
+import { Route as AdminUsersIndexRouteImport } from './routes/admin/users.index'
+import { Route as AdminPlansIndexRouteImport } from './routes/admin/plans.index'
 import { Route as AppSettingsIndexRouteImport } from './routes/_app/settings.index'
 import { Route as AppBillingIndexRouteImport } from './routes/_app/billing.index'
 import { Route as ApiWebhooksStripeRouteImport } from './routes/api/webhooks/stripe'
 import { Route as ApiWebhooksPolarRouteImport } from './routes/api/webhooks/polar'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth.$'
+import { Route as AdminUsersUserIdRouteImport } from './routes/admin/users.$userId'
+import { Route as AdminPlansCreateRouteImport } from './routes/admin/plans.create'
+import { Route as AdminPlansPlanIdRouteImport } from './routes/admin/plans.$planId'
 import { Route as AppSettingsSecurityRouteImport } from './routes/_app/settings.security'
 import { Route as AppSettingsPreferencesRouteImport } from './routes/_app/settings.preferences'
 import { Route as AppSettingsAdvancedRouteImport } from './routes/_app/settings.advanced'
@@ -60,6 +66,11 @@ const MarketingIndexRoute = MarketingIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => MarketingRouteRoute,
+} as any)
+const AdminSubscriptionsRoute = AdminSubscriptionsRouteImport.update({
+  id: '/subscriptions',
+  path: '/subscriptions',
+  getParentRoute: () => AdminRouteRoute,
 } as any)
 const MarketingPricingRoute = MarketingPricingRouteImport.update({
   id: '/pricing',
@@ -106,6 +117,16 @@ const AppBillingRoute = AppBillingRouteImport.update({
   path: '/billing',
   getParentRoute: () => AppRouteRoute,
 } as any)
+const AdminUsersIndexRoute = AdminUsersIndexRouteImport.update({
+  id: '/users/',
+  path: '/users/',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminPlansIndexRoute = AdminPlansIndexRouteImport.update({
+  id: '/plans/',
+  path: '/plans/',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
 const AppSettingsIndexRoute = AppSettingsIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -130,6 +151,21 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
   path: '/api/auth/$',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AdminUsersUserIdRoute = AdminUsersUserIdRouteImport.update({
+  id: '/users/$userId',
+  path: '/users/$userId',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminPlansCreateRoute = AdminPlansCreateRouteImport.update({
+  id: '/plans/create',
+  path: '/plans/create',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminPlansPlanIdRoute = AdminPlansPlanIdRouteImport.update({
+  id: '/plans/$planId',
+  path: '/plans/$planId',
+  getParentRoute: () => AdminRouteRoute,
 } as any)
 const AppSettingsSecurityRoute = AppSettingsSecurityRouteImport.update({
   id: '/security',
@@ -164,16 +200,22 @@ export interface FileRoutesByFullPath {
   '/reset-password': typeof AuthResetPasswordRoute
   '/verify-2fa': typeof AuthVerify2faRoute
   '/pricing': typeof MarketingPricingRoute
+  '/admin/subscriptions': typeof AdminSubscriptionsRoute
   '/admin/': typeof AdminIndexRoute
   '/billing/success': typeof AppBillingSuccessRoute
   '/settings/advanced': typeof AppSettingsAdvancedRoute
   '/settings/preferences': typeof AppSettingsPreferencesRoute
   '/settings/security': typeof AppSettingsSecurityRoute
+  '/admin/plans/$planId': typeof AdminPlansPlanIdRoute
+  '/admin/plans/create': typeof AdminPlansCreateRoute
+  '/admin/users/$userId': typeof AdminUsersUserIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/webhooks/polar': typeof ApiWebhooksPolarRoute
   '/api/webhooks/stripe': typeof ApiWebhooksStripeRoute
   '/billing/': typeof AppBillingIndexRoute
   '/settings/': typeof AppSettingsIndexRoute
+  '/admin/plans/': typeof AdminPlansIndexRoute
+  '/admin/users/': typeof AdminUsersIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof MarketingIndexRoute
@@ -184,16 +226,22 @@ export interface FileRoutesByTo {
   '/reset-password': typeof AuthResetPasswordRoute
   '/verify-2fa': typeof AuthVerify2faRoute
   '/pricing': typeof MarketingPricingRoute
+  '/admin/subscriptions': typeof AdminSubscriptionsRoute
   '/admin': typeof AdminIndexRoute
   '/billing/success': typeof AppBillingSuccessRoute
   '/settings/advanced': typeof AppSettingsAdvancedRoute
   '/settings/preferences': typeof AppSettingsPreferencesRoute
   '/settings/security': typeof AppSettingsSecurityRoute
+  '/admin/plans/$planId': typeof AdminPlansPlanIdRoute
+  '/admin/plans/create': typeof AdminPlansCreateRoute
+  '/admin/users/$userId': typeof AdminUsersUserIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/webhooks/polar': typeof ApiWebhooksPolarRoute
   '/api/webhooks/stripe': typeof ApiWebhooksStripeRoute
   '/billing': typeof AppBillingIndexRoute
   '/settings': typeof AppSettingsIndexRoute
+  '/admin/plans': typeof AdminPlansIndexRoute
+  '/admin/users': typeof AdminUsersIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -210,17 +258,23 @@ export interface FileRoutesById {
   '/_auth/reset-password': typeof AuthResetPasswordRoute
   '/_auth/verify-2fa': typeof AuthVerify2faRoute
   '/_marketing/pricing': typeof MarketingPricingRoute
+  '/admin/subscriptions': typeof AdminSubscriptionsRoute
   '/_marketing/': typeof MarketingIndexRoute
   '/admin/': typeof AdminIndexRoute
   '/_app/billing/success': typeof AppBillingSuccessRoute
   '/_app/settings/advanced': typeof AppSettingsAdvancedRoute
   '/_app/settings/preferences': typeof AppSettingsPreferencesRoute
   '/_app/settings/security': typeof AppSettingsSecurityRoute
+  '/admin/plans/$planId': typeof AdminPlansPlanIdRoute
+  '/admin/plans/create': typeof AdminPlansCreateRoute
+  '/admin/users/$userId': typeof AdminUsersUserIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/webhooks/polar': typeof ApiWebhooksPolarRoute
   '/api/webhooks/stripe': typeof ApiWebhooksStripeRoute
   '/_app/billing/': typeof AppBillingIndexRoute
   '/_app/settings/': typeof AppSettingsIndexRoute
+  '/admin/plans/': typeof AdminPlansIndexRoute
+  '/admin/users/': typeof AdminUsersIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -236,16 +290,22 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/verify-2fa'
     | '/pricing'
+    | '/admin/subscriptions'
     | '/admin/'
     | '/billing/success'
     | '/settings/advanced'
     | '/settings/preferences'
     | '/settings/security'
+    | '/admin/plans/$planId'
+    | '/admin/plans/create'
+    | '/admin/users/$userId'
     | '/api/auth/$'
     | '/api/webhooks/polar'
     | '/api/webhooks/stripe'
     | '/billing/'
     | '/settings/'
+    | '/admin/plans/'
+    | '/admin/users/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -256,16 +316,22 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/verify-2fa'
     | '/pricing'
+    | '/admin/subscriptions'
     | '/admin'
     | '/billing/success'
     | '/settings/advanced'
     | '/settings/preferences'
     | '/settings/security'
+    | '/admin/plans/$planId'
+    | '/admin/plans/create'
+    | '/admin/users/$userId'
     | '/api/auth/$'
     | '/api/webhooks/polar'
     | '/api/webhooks/stripe'
     | '/billing'
     | '/settings'
+    | '/admin/plans'
+    | '/admin/users'
   id:
     | '__root__'
     | '/_app'
@@ -281,17 +347,23 @@ export interface FileRouteTypes {
     | '/_auth/reset-password'
     | '/_auth/verify-2fa'
     | '/_marketing/pricing'
+    | '/admin/subscriptions'
     | '/_marketing/'
     | '/admin/'
     | '/_app/billing/success'
     | '/_app/settings/advanced'
     | '/_app/settings/preferences'
     | '/_app/settings/security'
+    | '/admin/plans/$planId'
+    | '/admin/plans/create'
+    | '/admin/users/$userId'
     | '/api/auth/$'
     | '/api/webhooks/polar'
     | '/api/webhooks/stripe'
     | '/_app/billing/'
     | '/_app/settings/'
+    | '/admin/plans/'
+    | '/admin/users/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -347,6 +419,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof MarketingIndexRouteImport
       parentRoute: typeof MarketingRouteRoute
+    }
+    '/admin/subscriptions': {
+      id: '/admin/subscriptions'
+      path: '/subscriptions'
+      fullPath: '/admin/subscriptions'
+      preLoaderRoute: typeof AdminSubscriptionsRouteImport
+      parentRoute: typeof AdminRouteRoute
     }
     '/_marketing/pricing': {
       id: '/_marketing/pricing'
@@ -411,6 +490,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppBillingRouteImport
       parentRoute: typeof AppRouteRoute
     }
+    '/admin/users/': {
+      id: '/admin/users/'
+      path: '/users'
+      fullPath: '/admin/users/'
+      preLoaderRoute: typeof AdminUsersIndexRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/plans/': {
+      id: '/admin/plans/'
+      path: '/plans'
+      fullPath: '/admin/plans/'
+      preLoaderRoute: typeof AdminPlansIndexRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
     '/_app/settings/': {
       id: '/_app/settings/'
       path: '/'
@@ -445,6 +538,27 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/auth/$'
       preLoaderRoute: typeof ApiAuthSplatRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/admin/users/$userId': {
+      id: '/admin/users/$userId'
+      path: '/users/$userId'
+      fullPath: '/admin/users/$userId'
+      preLoaderRoute: typeof AdminUsersUserIdRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/plans/create': {
+      id: '/admin/plans/create'
+      path: '/plans/create'
+      fullPath: '/admin/plans/create'
+      preLoaderRoute: typeof AdminPlansCreateRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/plans/$planId': {
+      id: '/admin/plans/$planId'
+      path: '/plans/$planId'
+      fullPath: '/admin/plans/$planId'
+      preLoaderRoute: typeof AdminPlansPlanIdRouteImport
+      parentRoute: typeof AdminRouteRoute
     }
     '/_app/settings/security': {
       id: '/_app/settings/security'
@@ -560,11 +674,23 @@ const MarketingRouteRouteWithChildren = MarketingRouteRoute._addFileChildren(
 )
 
 interface AdminRouteRouteChildren {
+  AdminSubscriptionsRoute: typeof AdminSubscriptionsRoute
   AdminIndexRoute: typeof AdminIndexRoute
+  AdminPlansPlanIdRoute: typeof AdminPlansPlanIdRoute
+  AdminPlansCreateRoute: typeof AdminPlansCreateRoute
+  AdminUsersUserIdRoute: typeof AdminUsersUserIdRoute
+  AdminPlansIndexRoute: typeof AdminPlansIndexRoute
+  AdminUsersIndexRoute: typeof AdminUsersIndexRoute
 }
 
 const AdminRouteRouteChildren: AdminRouteRouteChildren = {
+  AdminSubscriptionsRoute: AdminSubscriptionsRoute,
   AdminIndexRoute: AdminIndexRoute,
+  AdminPlansPlanIdRoute: AdminPlansPlanIdRoute,
+  AdminPlansCreateRoute: AdminPlansCreateRoute,
+  AdminUsersUserIdRoute: AdminUsersUserIdRoute,
+  AdminPlansIndexRoute: AdminPlansIndexRoute,
+  AdminUsersIndexRoute: AdminUsersIndexRoute,
 }
 
 const AdminRouteRouteWithChildren = AdminRouteRoute._addFileChildren(

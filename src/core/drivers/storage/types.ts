@@ -1,3 +1,5 @@
+import { z } from 'zod';
+
 export interface UploadParams {
   buffer: Buffer | ArrayBuffer;
   key: string;
@@ -11,20 +13,22 @@ export interface StorageObject {
   size: number;
 }
 
-interface StorageDriverConfigBase {
-  bucket: string;
-  publicUrl?: string;
-  prefix?: string;
-}
+export const s3StorageDriverConfigSchema = z.object({
+  driver: z.literal('s3'),
+  bucket: z.string().min(1),
+  endpoint: z.string().min(1),
+  region: z.string().optional(),
+  credentials: z.object({
+    accessKeyId: z.string().min(1),
+    secretAccessKey: z.string().min(1),
+  }),
+  publicUrl: z.string().optional(),
+  prefix: z.string().optional(),
+});
+export const storageDriverConfigSchema = s3StorageDriverConfigSchema;
 
-export interface S3StorageDriverConfig extends StorageDriverConfigBase {
-  driver: 's3';
-  endpoint: string;
-  region?: string;
-  credentials: { accessKeyId: string; secretAccessKey: string };
-}
-
-export type StorageDriverConfig = S3StorageDriverConfig;
+export type S3StorageDriverConfig = z.infer<typeof s3StorageDriverConfigSchema>;
+export type StorageDriverConfig = z.infer<typeof storageDriverConfigSchema>;
 
 export interface StorageDriver {
   upload(params: UploadParams): Promise<StorageObject>;

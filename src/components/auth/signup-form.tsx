@@ -1,4 +1,5 @@
-import { useRef, useState } from 'react';
+import { useState } from 'react';
+import { useForm } from '@tanstack/react-form';
 import { Button } from '@/components/selia/button';
 import {
   Card,
@@ -22,45 +23,53 @@ import { CircleAlert } from 'lucide-react';
 export function SignUpForm() {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const passwordRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
-  const handleSignUp = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setError(null);
-    setPending(true);
+  const form = useForm({
+    defaultValues: {
+      name: '',
+      email: '',
+      password: '',
+      confirmPassword: '',
+      terms: false,
+    },
+    onSubmit: async ({ value }) => {
+      setError(null);
+      setPending(true);
 
-    const formData = new FormData(e.currentTarget);
-    const name = formData.get('name') as string;
-    const email = formData.get('email') as string;
-    const password = formData.get('password') as string;
+      const { error } = await authClient.signUp.email({
+        name: value.name,
+        email: value.email,
+        password: value.password,
+        callbackURL: '/dashboard',
+      });
 
-    const { error } = await authClient.signUp.email({
-      name,
-      email,
-      password,
-      callbackURL: '/dashboard',
-    });
+      setPending(false);
 
-    setPending(false);
+      if (error) {
+        setError(error.message || 'An error occurred during sign up.');
+        return;
+      }
 
-    if (error) {
-      setError(error.message || 'An error occurred during sign up.');
-      return;
-    }
+      toastManager.add({
+        title: 'Account Created',
+        description:
+          'Welcome! Please check your email to verify your account.',
+        type: 'success',
+      });
 
-    toastManager.add({
-      title: 'Account Created',
-      description: 'Welcome! Please check your email to verify your account.',
-      type: 'success',
-    });
-
-    router.navigate({ to: '/dashboard' });
-  };
+      router.navigate({ to: '/dashboard' });
+    },
+  });
 
   return (
     <div className="w-full lg:h-screen flex items-center justify-center p-4">
-      <Form onSubmit={handleSignUp}>
+      <Form
+        onSubmit={(e) => {
+          e.preventDefault();
+          form.handleSubmit();
+        }}
+      >
         <Card className="w-full lg:w-5/12 xl:w-md">
           <CardHeader align="center">
             <CardTitle>Create an account</CardTitle>
@@ -69,89 +78,162 @@ export function SignUpForm() {
             </CardDescription>
           </CardHeader>
           <CardBody className="flex flex-col gap-5">
-            <Field>
-              <FieldLabel htmlFor="name">Name</FieldLabel>
-              <Input
-                id="name"
-                name="name"
-                type="text"
-                placeholder="Enter your name"
-                required
-                autoFocus
-              />
-              <FieldError match="badInput">
-                Please enter a valid name
-              </FieldError>
-              <FieldError match="valueMissing">Name is required</FieldError>
-            </Field>
-            <Field>
-              <FieldLabel htmlFor="email">Email</FieldLabel>
-              <Input
-                id="email"
-                name="email"
-                type="email"
-                placeholder="Enter your email"
-                required
-              />
-              <FieldError match="typeMismatch">
-                Please enter a valid email
-              </FieldError>
-              <FieldError match="valueMissing">Email is required</FieldError>
-            </Field>
-            <Field>
-              <div className="flex items-center">
-                <FieldLabel htmlFor="password">Password</FieldLabel>
-              </div>
-              <Input
-                ref={passwordRef}
-                id="password"
-                name="password"
-                type="password"
-                placeholder="Enter your password"
-                required
-              />
-              <FieldError match="valueMissing">Password is required</FieldError>
-            </Field>
-            <Field
-              validationMode="onSubmit"
-              validate={(value) => {
-                const password = passwordRef.current?.value;
-
-                if (value !== password) {
-                  return 'Passwords do not match';
-                }
-
-                return null;
+            <form.Field
+              name="name"
+              validators={{
+                onSubmit: ({ value }) =>
+                  !value ? 'Name is required' : undefined,
+                onChange: ({ value }) =>
+                  !value ? 'Name is required' : undefined,
               }}
             >
-              <div className="flex items-center">
-                <FieldLabel htmlFor="confirmPassword">
-                  Confirm Password
-                </FieldLabel>
-              </div>
-              <Input
-                id="confirmPassword"
-                name="confirmPassword"
-                type="password"
-                placeholder="Confirm your password"
-                required
-              />
-              <FieldError match="valueMissing">
-                Please confirm your password
-              </FieldError>
-              <FieldError match="customError" />
-            </Field>
-            <Field>
-              <Label htmlFor="terms">
-                <Checkbox id="terms" required />
-                <span>
-                  I agree to the <TextLink>Terms and Conditions</TextLink>
-                </span>
-              </Label>
-              <FieldError match="valueMissing">
-                You must agree to the terms and conditions
-              </FieldError>
-            </Field>
+              {(field) => (
+                <Field>
+                  <FieldLabel htmlFor="name">Name</FieldLabel>
+                  <Input
+                    id="name"
+                    type="text"
+                    placeholder="Enter your name"
+                    autoFocus
+                    value={field.state.value}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    onBlur={field.handleBlur}
+                  />
+                  {field.state.meta.errors.map((err, i) => (
+                    <FieldError key={i}>{err}</FieldError>
+                  ))}
+                </Field>
+              )}
+            </form.Field>
+            <form.Field
+              name="email"
+              validators={{
+                onSubmit: ({ value }) =>
+                  !value
+                    ? 'Email is required'
+                    : !/\S+@\S+\.\S+/.test(value)
+                      ? 'Please enter a valid email'
+                      : undefined,
+                onChange: ({ value }) =>
+                  !value
+                    ? 'Email is required'
+                    : !/\S+@\S+\.\S+/.test(value)
+                      ? 'Please enter a valid email'
+                      : undefined,
+              }}
+            >
+              {(field) => (
+                <Field>
+                  <FieldLabel htmlFor="email">Email</FieldLabel>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="Enter your email"
+                    value={field.state.value}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    onBlur={field.handleBlur}
+                  />
+                  {field.state.meta.errors.map((err, i) => (
+                    <FieldError key={i}>{err}</FieldError>
+                  ))}
+                </Field>
+              )}
+            </form.Field>
+            <form.Field
+              name="password"
+              validators={{
+                onSubmit: ({ value }) =>
+                  !value ? 'Password is required' : undefined,
+                onChange: ({ value }) =>
+                  !value ? 'Password is required' : undefined,
+              }}
+            >
+              {(field) => (
+                <Field>
+                  <FieldLabel htmlFor="password">Password</FieldLabel>
+                  <Input
+                    id="password"
+                    type="password"
+                    placeholder="Enter your password"
+                    value={field.state.value}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    onBlur={field.handleBlur}
+                  />
+                  {field.state.meta.errors.map((err, i) => (
+                    <FieldError key={i}>{err}</FieldError>
+                  ))}
+                </Field>
+              )}
+            </form.Field>
+            <form.Field
+              name="confirmPassword"
+              validators={{
+                onSubmit: ({ value }) => {
+                  if (!value) return 'Please confirm your password';
+                  if (value !== form.getFieldValue('password'))
+                    return 'Passwords do not match';
+                  return undefined;
+                },
+                onChange: ({ value }) => {
+                  if (!value) return 'Please confirm your password';
+                  if (value !== form.getFieldValue('password'))
+                    return 'Passwords do not match';
+                  return undefined;
+                },
+              }}
+            >
+              {(field) => (
+                <Field>
+                  <FieldLabel htmlFor="confirmPassword">
+                    Confirm Password
+                  </FieldLabel>
+                  <Input
+                    id="confirmPassword"
+                    type="password"
+                    placeholder="Confirm your password"
+                    value={field.state.value}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    onBlur={field.handleBlur}
+                  />
+                  {field.state.meta.errors.map((err, i) => (
+                    <FieldError key={i}>{err}</FieldError>
+                  ))}
+                </Field>
+              )}
+            </form.Field>
+            <form.Field
+              name="terms"
+              validators={{
+                onSubmit: ({ value }) =>
+                  !value
+                    ? 'You must agree to the terms and conditions'
+                    : undefined,
+                onChange: ({ value }) =>
+                  !value
+                    ? 'You must agree to the terms and conditions'
+                    : undefined,
+              }}
+            >
+              {(field) => (
+                <Field>
+                  <Label htmlFor="terms">
+                    <Checkbox
+                      id="terms"
+                      checked={field.state.value}
+                      onCheckedChange={(checked) =>
+                        field.handleChange(!!checked)
+                      }
+                    />
+                    <span>
+                      I agree to the <TextLink>Terms and Conditions</TextLink>
+                    </span>
+                  </Label>
+                  {field.state.meta.errors.map((err, i) => (
+                    <FieldError key={i}>{err}</FieldError>
+                  ))}
+                </Field>
+              )}
+            </form.Field>
             {error && (
               <Alert variant="danger">
                 <CircleAlert />

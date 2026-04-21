@@ -10,7 +10,7 @@ import { Badge } from '@/components/selia/badge';
 import { Button } from '@/components/selia/button';
 import { ManageButton } from './manage-button';
 import { CancelButton } from './cancel-button';
-import { SUBSCRIPTION_STATUS_BADGE } from '@/lib/constants';
+import { getSubscriptionStatus } from '@/lib/utils';
 import { Link } from '@tanstack/react-router';
 
 interface SubscriptionStatusProps {
@@ -47,12 +47,13 @@ export function SubscriptionStatus({ subscription }: SubscriptionStatusProps) {
     );
   }
 
-  const badge = subscription.cancelAtPeriodEnd
-    ? SUBSCRIPTION_STATUS_BADGE.canceled
-    : (SUBSCRIPTION_STATUS_BADGE[subscription.status] ?? {
-        variant: 'secondary' as const,
-        label: subscription.status,
-      });
+  const status = subscription.cancelAtPeriodEnd
+    ? 'canceled'
+    : subscription.status;
+  const badge = getSubscriptionStatus(status) ?? {
+    variant: 'secondary' as const,
+    label: status,
+  };
 
   const periodEnd = subscription.currentPeriodEnd
     ? new Date(subscription.currentPeriodEnd).toLocaleDateString('en-US', {

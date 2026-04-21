@@ -1,4 +1,5 @@
-import { useRef, useState } from 'react';
+import { useState } from 'react';
+import { useForm } from '@tanstack/react-form';
 import { QRCodeSVG } from 'qrcode.react';
 import { Button } from '@/components/selia/button';
 import { Input } from '@/components/selia/input';
@@ -18,65 +19,62 @@ export function EnableTwoFactorForm({ onSuccess }: { onSuccess: () => void }) {
   const [totpURI, setTotpURI] = useState('');
   const [backupCodes, setBackupCodes] = useState<string[]>([]);
   const [copied, setCopied] = useState(false);
-  const formRef = useRef<HTMLFormElement>(null);
 
-  const handleEnableStep = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setPending(true);
+  const passwordForm = useForm({
+    defaultValues: { password: '' },
+    onSubmit: async ({ value }) => {
+      setPending(true);
 
-    const formData = new FormData(e.currentTarget);
-    const password = formData.get('password') as string;
-
-    const { data, error } = await authClient.twoFactor.enable({
-      password,
-    });
-
-    setPending(false);
-
-    if (error) {
-      toastManager.add({
-        title: 'Error',
-        description: error.message || 'Failed to enable 2FA.',
-        type: 'error',
+      const { data, error } = await authClient.twoFactor.enable({
+        password: value.password,
       });
-      return;
-    }
 
-    setTotpURI(data.totpURI);
-    setBackupCodes(data.backupCodes);
-    setStep('qr');
-  };
+      setPending(false);
 
-  const handleVerifyStep = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setPending(true);
+      if (error) {
+        toastManager.add({
+          title: 'Error',
+          description: error.message || 'Failed to enable 2FA.',
+          type: 'error',
+        });
+        return;
+      }
 
-    const formData = new FormData(e.currentTarget);
-    const code = formData.get('code') as string;
+      setTotpURI(data.totpURI);
+      setBackupCodes(data.backupCodes);
+      setStep('qr');
+    },
+  });
 
-    const { error } = await authClient.twoFactor.verifyTotp({
-      code,
-    });
+  const verifyForm = useForm({
+    defaultValues: { code: '' },
+    onSubmit: async ({ value }) => {
+      setPending(true);
 
-    setPending(false);
-
-    if (error) {
-      toastManager.add({
-        title: 'Invalid Code',
-        description: error.message || 'The code you entered is incorrect.',
-        type: 'error',
+      const { error } = await authClient.twoFactor.verifyTotp({
+        code: value.code,
       });
-      return;
-    }
 
-    toastManager.add({
-      title: '2FA Enabled',
-      description: 'Two-factor authentication has been enabled.',
-      type: 'success',
-    });
+      setPending(false);
 
-    onSuccess();
-  };
+      if (error) {
+        toastManager.add({
+          title: 'Invalid Code',
+          description: error.message || 'The code you entered is incorrect.',
+          type: 'error',
+        });
+        return;
+      }
+
+      toastManager.add({
+        title: '2FA Enabled',
+        description: 'Two-factor authentication has been enabled.',
+        type: 'success',
+      });
+
+      onSuccess();
+    },
+  });
 
   const handleCopyBackupCodes = () => {
     navigator.clipboard.writeText(backupCodes.join('\n'));
@@ -86,21 +84,41 @@ export function EnableTwoFactorForm({ onSuccess }: { onSuccess: () => void }) {
 
   if (step === 'password') {
     return (
-      <Form ref={formRef} onSubmit={handleEnableStep}>
+      <Form
+        onSubmit={(e) => {
+          e.preventDefault();
+          passwordForm.handleSubmit();
+        }}
+      >
         <Text className="text-muted mb-2">
           Enter your password to begin setting up two-factor authentication.
         </Text>
-        <Field>
-          <FieldLabel htmlFor="2fa-password">Password</FieldLabel>
-          <Input
-            id="2fa-password"
-            name="password"
-            type="password"
-            placeholder="Enter your password"
-            required
-          />
-          <FieldError match="valueMissing">Password is required</FieldError>
-        </Field>
+        <passwordForm.Field
+          name="password"
+          validators={{
+            onSubmit: ({ value }) =>
+              !value ? 'Password is required' : undefined,
+            onChange: ({ value }) =>
+              !value ? 'Password is required' : undefined,
+          }}
+        >
+          {(field) => (
+            <Field>
+              <FieldLabel htmlFor="2fa-password">Password</FieldLabel>
+              <Input
+                id="2fa-password"
+                type="password"
+                placeholder="Enter your password"
+                value={field.state.value}
+                onChange={(e) => field.handleChange(e.target.value)}
+                onBlur={field.handleBlur}
+              />
+              {field.state.meta.errors.map((err, i) => (
+                <FieldError key={i}>{err}</FieldError>
+              ))}
+            </Field>
+          )}
+        </passwordForm.Field>
         <Button variant="primary" progress={pending} type="submit">
           Enable 2FA
         </Button>
@@ -157,26 +175,50 @@ export function EnableTwoFactorForm({ onSuccess }: { onSuccess: () => void }) {
   }
 
   return (
-    <Form onSubmit={handleVerifyStep}>
+    <Form
+      onSubmit={(e) => {
+        e.preventDefault();
+        verifyForm.handleSubmit();
+      }}
+    >
       <Text className="text-muted mb-2">
         Enter the 6-digit code from your authenticator app to verify the setup.
       </Text>
-      <Field>
-        <FieldLabel htmlFor="totp-code">Verification Code</FieldLabel>
-        <Input
-          id="totp-code"
-          name="code"
-          type="text"
-          inputMode="numeric"
-          pattern="[0-9]{6}"
-          maxLength={6}
-          placeholder="000000"
-          autoComplete="one-time-code"
-          required
-        />
-        <FieldError match="valueMissing">Code is required</FieldError>
-        <FieldError match="patternMismatch">Enter a 6-digit code</FieldError>
-      </Field>
+      <verifyForm.Field
+        name="code"
+        validators={{
+          onSubmit: ({ value }) => {
+            if (!value) return 'Code is required';
+            if (!/^[0-9]{6}$/.test(value)) return 'Enter a 6-digit code';
+            return undefined;
+          },
+          onChange: ({ value }) => {
+            if (!value) return 'Code is required';
+            if (!/^[0-9]{6}$/.test(value)) return 'Enter a 6-digit code';
+            return undefined;
+          },
+        }}
+      >
+        {(field) => (
+          <Field>
+            <FieldLabel htmlFor="totp-code">Verification Code</FieldLabel>
+            <Input
+              id="totp-code"
+              type="text"
+              inputMode="numeric"
+              maxLength={6}
+              placeholder="000000"
+              autoComplete="one-time-code"
+              value={field.state.value}
+              onChange={(e) => field.handleChange(e.target.value)}
+              onBlur={field.handleBlur}
+            />
+            {field.state.meta.errors.map((err, i) => (
+              <FieldError key={i}>{err}</FieldError>
+            ))}
+          </Field>
+        )}
+      </verifyForm.Field>
       <Button variant="primary" progress={pending} type="submit">
         Verify & Activate
       </Button>

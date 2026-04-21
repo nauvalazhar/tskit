@@ -1,5 +1,5 @@
 import { eq, and } from 'drizzle-orm';
-import { paymentConfig } from '@/config/payment';
+import { paymentConfig, type PaymentChannel } from '@/config/payment';
 import { createPaymentDriver } from '@/core/drivers/payment';
 import type { PaymentDriver, WebhookEvent } from '@/core/drivers/payment/types';
 import { db } from '@/database';
@@ -9,7 +9,7 @@ import { getPlanById, getPlanPrice } from '@/services/plan.service';
 
 class Payment {
   private drivers = new Map<string, PaymentDriver>();
-  private channel: string | undefined;
+  private channel: PaymentChannel | undefined;
 
   private resolve(): PaymentDriver {
     const name = this.channel || paymentConfig.default;
@@ -21,7 +21,7 @@ class Payment {
     return this.drivers.get(name)!;
   }
 
-  use(name: string): Payment {
+  use(name: PaymentChannel): Payment {
     const scoped = new Payment();
     scoped.drivers = this.drivers;
     scoped.channel = name;

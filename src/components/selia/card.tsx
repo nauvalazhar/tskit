@@ -96,6 +96,45 @@ export function CardDescription({
   );
 }
 
+export function CardSubsection({
+  className,
+  ...props
+}: React.ComponentProps<'div'>) {
+  return (
+    <div
+      data-slot="card-subsection"
+      className={cn('mb-6', className)}
+      {...props}
+    />
+  );
+}
+
+export function CardSubsectionTitle({
+  className,
+  ...props
+}: React.ComponentProps<'h3'>) {
+  return (
+    <h3
+      data-slot="card-subsection-title"
+      className={cn('text-lg font-semibold', className)}
+      {...props}
+    />
+  );
+}
+
+export function CardSubsectionDescription({
+  className,
+  ...props
+}: React.ComponentProps<'p'>) {
+  return (
+    <p
+      data-slot="card-subsection-description"
+      className={cn('text-muted text-sm mt-1', className)}
+      {...props}
+    />
+  );
+}
+
 export function CardBody({ className, ...props }: React.ComponentProps<'div'>) {
   return (
     <div

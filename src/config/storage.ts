@@ -1,20 +1,26 @@
-import type { StorageDriverConfig } from '@/core/drivers/storage/types';
+import { z } from 'zod';
+import { storageDriverConfigSchema } from '@/core/drivers/storage/types';
 
-export interface StorageConfig {
-  default: string;
-  channels: Record<string, StorageDriverConfig>;
-}
+const storageChannelsSchema = z.object({
+  public: storageDriverConfigSchema,
+  private: storageDriverConfigSchema,
+});
 
-export const storageConfig: StorageConfig = {
+const storageConfigSchema = z.object({
+  default: storageChannelsSchema.keyof(),
+  channels: storageChannelsSchema,
+});
+
+export const storageConfig = storageConfigSchema.parse({
   default: 'public',
   channels: {
     public: {
       driver: 's3',
-      bucket: process.env.R2_BUCKET_NAME!,
+      bucket: process.env.R2_BUCKET_NAME,
       endpoint: `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
       credentials: {
-        accessKeyId: process.env.R2_ACCESS_KEY_ID!,
-        secretAccessKey: process.env.R2_SECRET_ACCESS_KEY!,
+        accessKeyId: process.env.R2_ACCESS_KEY_ID,
+        secretAccessKey: process.env.R2_SECRET_ACCESS_KEY,
       },
       publicUrl: process.env.R2_PUBLIC_URL,
     },
@@ -23,9 +29,12 @@ export const storageConfig: StorageConfig = {
       bucket: process.env.R2_PRIVATE_BUCKET_NAME || 'tskit-private',
       endpoint: `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
       credentials: {
-        accessKeyId: process.env.R2_ACCESS_KEY_ID!,
-        secretAccessKey: process.env.R2_SECRET_ACCESS_KEY!,
+        accessKeyId: process.env.R2_ACCESS_KEY_ID,
+        secretAccessKey: process.env.R2_SECRET_ACCESS_KEY,
       },
     },
   },
-};
+});
+
+export type StorageConfig = z.infer<typeof storageConfigSchema>;
+export type StorageChannel = keyof StorageConfig['channels'];

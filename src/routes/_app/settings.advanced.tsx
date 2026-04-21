@@ -104,9 +104,6 @@ function RouteComponent() {
                     value={confirmation}
                     onChange={(e) => setConfirmation(e.target.value)}
                   />
-                  <FieldError match="valueMissing">
-                    Password is required
-                  </FieldError>
                 </Field>
               ) : (
                 <Field>

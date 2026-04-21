@@ -3,6 +3,7 @@ import Stripe from 'stripe';
 import { Polar } from '@polar-sh/sdk';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { plans, planPrices } from './schemas/billing';
+import { auth } from '@/lib/auth';
 
 const db = drizzle(process.env.DATABASE_URL!);
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
@@ -155,7 +156,33 @@ async function syncPolar(
     });
 }
 
+const adminUser = {
+  name: 'Admin',
+  email: 'admin@example.com',
+  password: 'password',
+};
+
+async function seedAdmin() {
+  console.log('Seeding admin user...');
+
+  try {
+    await auth.api.createUser({
+      body: {
+        email: adminUser.email,
+        password: adminUser.password,
+        name: adminUser.name,
+        role: 'admin',
+      },
+    });
+    console.log(`  Created admin: ${adminUser.email} / ${adminUser.password}`);
+  } catch {
+    console.log(`  Admin user already exists: ${adminUser.email}`);
+  }
+}
+
 async function seed() {
+  await seedAdmin();
+
   console.log('Syncing plans...');
   if (!polar) console.log('  POLAR_ACCESS_TOKEN not set, skipping Polar sync');
 
@@ -168,7 +195,7 @@ async function seed() {
         description: seedPlan.description,
         price: seedPlan.price,
         currency: seedPlan.currency,
-        interval: 'monthly',
+        interval: seedPlan.interval,
         entitlements: seedPlan.entitlements,
         sortOrder: seedPlan.sortOrder,
       })
@@ -178,6 +205,7 @@ async function seed() {
           name: seedPlan.name,
           description: seedPlan.description,
           price: seedPlan.price,
+          interval: seedPlan.interval,
           entitlements: seedPlan.entitlements,
           sortOrder: seedPlan.sortOrder,
         },

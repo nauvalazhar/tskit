@@ -5,11 +5,14 @@ import { billingSubscriptionPollingQuery } from '@/queries/billing.queries';
 import { Card, CardBody } from '@/components/selia/card';
 import { Button } from '@/components/selia/button';
 import { CheckIcon, LoaderCircleIcon, AlertTriangleIcon } from 'lucide-react';
+import { z } from 'zod';
+
+const searchSchema = z.object({
+  session_id: z.string().optional(),
+});
 
 export const Route = createFileRoute('/_app/billing/success')({
-  validateSearch: (search: Record<string, unknown>) => ({
-    session_id: search.session_id as string | undefined,
-  }),
+  validateSearch: searchSchema,
   beforeLoad: ({ search }) => {
     if (!search.session_id) {
       throw redirect({ to: '/billing' });

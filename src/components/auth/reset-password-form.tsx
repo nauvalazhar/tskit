@@ -1,4 +1,5 @@
-import { useRef, useState } from 'react';
+import { useState } from 'react';
+import { useForm } from '@tanstack/react-form';
 import { Button } from '@/components/selia/button';
 import {
   Card,
@@ -20,8 +21,38 @@ import { CircleAlert } from 'lucide-react';
 export function ResetPasswordForm({ token }: { token?: string }) {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const passwordRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
+
+  const form = useForm({
+    defaultValues: {
+      password: '',
+      confirmPassword: '',
+    },
+    onSubmit: async ({ value }) => {
+      setError(null);
+      setPending(true);
+
+      const { error } = await authClient.resetPassword({
+        newPassword: value.password,
+        token: token!,
+      });
+
+      setPending(false);
+
+      if (error) {
+        setError(error.message || 'Failed to reset password.');
+        return;
+      }
+
+      toastManager.add({
+        title: 'Password Reset',
+        description: 'Your password has been reset successfully.',
+        type: 'success',
+      });
+
+      router.navigate({ to: '/login' });
+    },
+  });
 
   if (!token) {
     return (
@@ -45,83 +76,82 @@ export function ResetPasswordForm({ token }: { token?: string }) {
     );
   }
 
-  const handleResetPassword = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setError(null);
-    setPending(true);
-
-    const formData = new FormData(e.currentTarget);
-    const newPassword = formData.get('password') as string;
-
-    const { error } = await authClient.resetPassword({
-      newPassword,
-      token,
-    });
-
-    setPending(false);
-
-    if (error) {
-      setError(error.message || 'Failed to reset password.');
-      return;
-    }
-
-    toastManager.add({
-      title: 'Password Reset',
-      description: 'Your password has been reset successfully.',
-      type: 'success',
-    });
-
-    router.navigate({ to: '/login' });
-  };
-
   return (
     <div className="w-full lg:h-screen flex items-center justify-center p-4">
-      <Form onSubmit={handleResetPassword}>
+      <Form
+        onSubmit={(e) => {
+          e.preventDefault();
+          form.handleSubmit();
+        }}
+      >
         <Card className="w-full lg:w-5/12 xl:w-md">
           <CardHeader align="center">
             <CardTitle>Reset Password</CardTitle>
             <CardDescription>Enter your new password below.</CardDescription>
           </CardHeader>
           <CardBody className="flex flex-col gap-5">
-            <Field>
-              <FieldLabel htmlFor="password">New Password</FieldLabel>
-              <Input
-                ref={passwordRef}
-                id="password"
-                name="password"
-                type="password"
-                placeholder="Enter new password"
-                required
-              />
-              <FieldError match="valueMissing">
-                Password is required
-              </FieldError>
-            </Field>
-            <Field
-              validationMode="onSubmit"
-              validate={(value) => {
-                const password = passwordRef.current?.value;
-                if (value !== password) {
-                  return 'Passwords do not match';
-                }
-                return null;
+            <form.Field
+              name="password"
+              validators={{
+                onSubmit: ({ value }) =>
+                  !value ? 'Password is required' : undefined,
+                onChange: ({ value }) =>
+                  !value ? 'Password is required' : undefined,
               }}
             >
-              <FieldLabel htmlFor="confirmPassword">
-                Confirm New Password
-              </FieldLabel>
-              <Input
-                id="confirmPassword"
-                name="confirmPassword"
-                type="password"
-                placeholder="Confirm new password"
-                required
-              />
-              <FieldError match="valueMissing">
-                Please confirm your password
-              </FieldError>
-              <FieldError match="customError" />
-            </Field>
+              {(field) => (
+                <Field>
+                  <FieldLabel htmlFor="password">New Password</FieldLabel>
+                  <Input
+                    id="password"
+                    type="password"
+                    placeholder="Enter new password"
+                    value={field.state.value}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    onBlur={field.handleBlur}
+                  />
+                  {field.state.meta.errors.map((err, i) => (
+                    <FieldError key={i}>{err}</FieldError>
+                  ))}
+                </Field>
+              )}
+            </form.Field>
+            <form.Field
+              name="confirmPassword"
+              validators={{
+                onSubmit: ({ value }) => {
+                  if (!value) return 'Please confirm your password';
+                  if (value !== form.getFieldValue('password'))
+                    return 'Passwords do not match';
+                  return undefined;
+                },
+                onChange: ({ value }) => {
+                  if (!value) return 'Please confirm your password';
+                  if (value !== form.getFieldValue('password'))
+                    return 'Passwords do not match';
+                  return undefined;
+                },
+              }}
+            >
+              {(field) => (
+                <Field>
+                  <FieldLabel htmlFor="confirmPassword">
+                    Confirm New Password
+                  </FieldLabel>
+                  <Input
+                    id="confirmPassword"
+                    type="password"
+                    placeholder="Confirm new password"
+                    value={field.state.value}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    onBlur={field.handleBlur}
+                  />
+                  {field.state.meta.errors.map((err, i) => (
+                    <FieldError key={i}>{err}</FieldError>
+                  ))}
+                </Field>
+              )}
+            </form.Field>
             {error && (
               <Alert variant="danger">
                 <CircleAlert />

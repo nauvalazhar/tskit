@@ -1,13 +1,12 @@
 import { createServerFn } from '@tanstack/react-start';
+import { z } from 'zod';
 import { storage } from '@/lib/storage';
 import { UPLOAD_ALLOWED_TYPES } from '@/lib/constants';
 import { authMiddleware } from '@/middleware/auth';
 
 export const getAvatarUploadUrl = createServerFn({ method: 'POST' })
   .middleware([authMiddleware])
-  .inputValidator(
-    (data: { contentType: string; fileName: string }) => data,
-  )
+  .inputValidator(z.object({ contentType: z.string().min(1), fileName: z.string().min(1) }))
   .handler(async ({ data }) => {
     if (!UPLOAD_ALLOWED_TYPES.includes(data.contentType)) {
       const types = UPLOAD_ALLOWED_TYPES.map((t) =>
@@ -25,7 +24,7 @@ export const getAvatarUploadUrl = createServerFn({ method: 'POST' })
 
 export const cleanupOldAvatar = createServerFn({ method: 'POST' })
   .middleware([authMiddleware])
-  .inputValidator((data: { url: string }) => data)
+  .inputValidator(z.object({ url: z.string().url() }))
   .handler(async ({ data }) => {
     if (data.url) {
       await storage.removeByUrl(data.url);

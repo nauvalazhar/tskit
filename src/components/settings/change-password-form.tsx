@@ -1,4 +1,5 @@
-import { useRef, useState } from 'react';
+import { useState } from 'react';
+import { useForm } from '@tanstack/react-form';
 import { Button } from '@/components/selia/button';
 import { Input } from '@/components/selia/input';
 import { Field, FieldError, FieldLabel } from '@/components/selia/field';
@@ -11,92 +12,135 @@ import { CircleAlert } from 'lucide-react';
 export function ChangePasswordForm() {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const formRef = useRef<HTMLFormElement>(null);
-  const newPasswordRef = useRef<HTMLInputElement>(null);
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setError(null);
-    setPending(true);
+  const form = useForm({
+    defaultValues: {
+      currentPassword: '',
+      newPassword: '',
+      confirmNewPassword: '',
+    },
+    onSubmit: async ({ value }) => {
+      setError(null);
+      setPending(true);
 
-    const formData = new FormData(e.currentTarget);
-    const currentPassword = formData.get('currentPassword') as string;
-    const newPassword = formData.get('newPassword') as string;
+      const { error } = await authClient.changePassword({
+        currentPassword: value.currentPassword,
+        newPassword: value.newPassword,
+        revokeOtherSessions: true,
+      });
 
-    const { error } = await authClient.changePassword({
-      currentPassword,
-      newPassword,
-      revokeOtherSessions: true,
-    });
+      setPending(false);
 
-    setPending(false);
+      if (error) {
+        setError(error.message || 'Failed to change password.');
+        return;
+      }
 
-    if (error) {
-      setError(error.message || 'Failed to change password.');
-      return;
-    }
+      toastManager.add({
+        title: 'Password Changed',
+        description: 'Your password has been changed successfully.',
+        type: 'success',
+      });
 
-    toastManager.add({
-      title: 'Password Changed',
-      description: 'Your password has been changed successfully.',
-      type: 'success',
-    });
-
-    formRef.current?.reset();
-  };
+      form.reset();
+    },
+  });
 
   return (
-    <Form ref={formRef} onSubmit={handleSubmit}>
-      <Field>
-        <FieldLabel htmlFor="currentPassword">Current Password</FieldLabel>
-        <Input
-          id="currentPassword"
-          name="currentPassword"
-          type="password"
-          placeholder="Enter current password"
-          required
-        />
-        <FieldError match="valueMissing">
-          Current password is required
-        </FieldError>
-      </Field>
-      <Field>
-        <FieldLabel htmlFor="newPassword">New Password</FieldLabel>
-        <Input
-          ref={newPasswordRef}
-          id="newPassword"
-          name="newPassword"
-          type="password"
-          placeholder="Enter new password"
-          required
-        />
-        <FieldError match="valueMissing">New password is required</FieldError>
-      </Field>
-      <Field
-        validationMode="onSubmit"
-        validate={(value) => {
-          const newPassword = newPasswordRef.current?.value;
-          if (value !== newPassword) {
-            return 'Passwords do not match';
-          }
-          return null;
+    <Form
+      onSubmit={(e) => {
+        e.preventDefault();
+        form.handleSubmit();
+      }}
+    >
+      <form.Field
+        name="currentPassword"
+        validators={{
+          onSubmit: ({ value }) =>
+            !value ? 'Current password is required' : undefined,
+          onChange: ({ value }) =>
+            !value ? 'Current password is required' : undefined,
         }}
       >
-        <FieldLabel htmlFor="confirmNewPassword">
-          Confirm New Password
-        </FieldLabel>
-        <Input
-          id="confirmNewPassword"
-          name="confirmNewPassword"
-          type="password"
-          placeholder="Confirm new password"
-          required
-        />
-        <FieldError match="valueMissing">
-          Please confirm your new password
-        </FieldError>
-        <FieldError match="customError" />
-      </Field>
+        {(field) => (
+          <Field>
+            <FieldLabel htmlFor="currentPassword">Current Password</FieldLabel>
+            <Input
+              id="currentPassword"
+              type="password"
+              placeholder="Enter current password"
+              value={field.state.value}
+              onChange={(e) => field.handleChange(e.target.value)}
+              onBlur={field.handleBlur}
+            />
+            {field.state.meta.errors.map((err, i) => (
+              <FieldError key={i}>{err}</FieldError>
+            ))}
+          </Field>
+        )}
+      </form.Field>
+      <form.Field
+        name="newPassword"
+        validators={{
+          onSubmit: ({ value }) =>
+            !value ? 'New password is required' : undefined,
+          onChange: ({ value }) =>
+            !value ? 'New password is required' : undefined,
+        }}
+      >
+        {(field) => (
+          <Field>
+            <FieldLabel htmlFor="newPassword">New Password</FieldLabel>
+            <Input
+              id="newPassword"
+              type="password"
+              placeholder="Enter new password"
+              value={field.state.value}
+              onChange={(e) => field.handleChange(e.target.value)}
+              onBlur={field.handleBlur}
+            />
+            {field.state.meta.errors.map((err, i) => (
+              <FieldError key={i}>{err}</FieldError>
+            ))}
+          </Field>
+        )}
+      </form.Field>
+      <form.Field
+        name="confirmNewPassword"
+        validators={{
+          onSubmit: ({ value }) => {
+            if (!value) return 'Please confirm your new password';
+            if (value !== form.getFieldValue('newPassword'))
+              return 'Passwords do not match';
+            return undefined;
+          },
+          onChange: ({ value }) => {
+            if (!value) return 'Please confirm your new password';
+            if (value !== form.getFieldValue('newPassword'))
+              return 'Passwords do not match';
+            return undefined;
+          },
+        }}
+      >
+        {(field) => (
+          <Field>
+            <FieldLabel htmlFor="confirmNewPassword">
+              Confirm New Password
+            </FieldLabel>
+            <Input
+              id="confirmNewPassword"
+              type="password"
+              placeholder="Confirm new password"
+              value={field.state.value}
+              onChange={(e) => field.handleChange(e.target.value)}
+              onBlur={field.handleBlur}
+            />
+            {field.state.meta.errors.map((err, i) => (
+              <FieldError key={i}>{err}</FieldError>
+            ))}
+          </Field>
+        )}
+      </form.Field>
       {error && (
         <Alert variant="danger">
           <CircleAlert />

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useForm } from '@tanstack/react-form';
 import { Button } from '@/components/selia/button';
 import {
   Card,
@@ -21,28 +22,27 @@ export function ForgotPasswordForm() {
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleForgotPassword = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setError(null);
-    setPending(true);
+  const form = useForm({
+    defaultValues: { email: '' },
+    onSubmit: async ({ value }) => {
+      setError(null);
+      setPending(true);
 
-    const formData = new FormData(e.currentTarget);
-    const email = formData.get('email') as string;
+      const { error } = await authClient.requestPasswordReset({
+        email: value.email,
+        redirectTo: '/reset-password',
+      });
 
-    const { error } = await authClient.requestPasswordReset({
-      email,
-      redirectTo: '/reset-password',
-    });
+      setPending(false);
 
-    setPending(false);
+      if (error) {
+        setError(error.message || 'Something went wrong.');
+        return;
+      }
 
-    if (error) {
-      setError(error.message || 'Something went wrong.');
-      return;
-    }
-
-    setSubmitted(true);
-  };
+      setSubmitted(true);
+    },
+  });
 
   return (
     <div className="w-full lg:h-screen flex items-center justify-center p-4">
@@ -70,23 +70,46 @@ export function ForgotPasswordForm() {
             </>
           ) : (
             <>
-              <Form onSubmit={handleForgotPassword}>
-                <Field>
-                  <FieldLabel htmlFor="email">Email</FieldLabel>
-                  <Input
-                    id="email"
-                    name="email"
-                    type="email"
-                    placeholder="Enter your email"
-                    required
-                  />
-                  <FieldError match="typeMismatch">
-                    Please enter a valid email
-                  </FieldError>
-                  <FieldError match="valueMissing">
-                    Email is required
-                  </FieldError>
-                </Field>
+              <Form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  form.handleSubmit();
+                }}
+              >
+                <form.Field
+                  name="email"
+                  validators={{
+                    onSubmit: ({ value }) =>
+                      !value
+                        ? 'Email is required'
+                        : !/\S+@\S+\.\S+/.test(value)
+                          ? 'Please enter a valid email'
+                          : undefined,
+                    onChange: ({ value }) =>
+                      !value
+                        ? 'Email is required'
+                        : !/\S+@\S+\.\S+/.test(value)
+                          ? 'Please enter a valid email'
+                          : undefined,
+                  }}
+                >
+                  {(field) => (
+                    <Field>
+                      <FieldLabel htmlFor="email">Email</FieldLabel>
+                      <Input
+                        id="email"
+                        type="email"
+                        placeholder="Enter your email"
+                        value={field.state.value}
+                        onChange={(e) => field.handleChange(e.target.value)}
+                        onBlur={field.handleBlur}
+                      />
+                      {field.state.meta.errors.map((err, i) => (
+                        <FieldError key={i}>{err}</FieldError>
+                      ))}
+                    </Field>
+                  )}
+                </form.Field>
                 {error && (
                   <Alert variant="danger">
                     <CircleAlert />

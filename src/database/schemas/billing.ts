@@ -11,6 +11,7 @@ import {
   uniqueIndex,
 } from 'drizzle-orm/pg-core';
 import { users } from './auth';
+import type { PaymentChannel } from '@/config/payment';
 
 export const plans = pgTable('plans', {
   id: uuid('id')
@@ -45,7 +46,7 @@ export const planPrices = pgTable(
     planId: uuid('plan_id')
       .notNull()
       .references(() => plans.id, { onDelete: 'cascade' }),
-    channel: text('channel').notNull(),
+    channel: text('channel').$type<PaymentChannel>().notNull(),
     externalProductId: text('external_product_id').notNull(),
     externalPriceId: text('external_price_id').notNull().unique(),
     createdAt: timestamp('created_at').defaultNow().notNull(),
@@ -69,7 +70,7 @@ export const customers = pgTable(
     userId: uuid('user_id')
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
-    channel: text('channel').notNull(),
+    channel: text('channel').$type<PaymentChannel>().notNull(),
     externalCustomerId: text('external_customer_id').notNull().unique(),
     createdAt: timestamp('created_at').defaultNow().notNull(),
     updatedAt: timestamp('updated_at')
@@ -95,7 +96,7 @@ export const subscriptions = pgTable(
     planId: uuid('plan_id')
       .notNull()
       .references(() => plans.id, { onDelete: 'restrict' }),
-    channel: text('channel').notNull(),
+    channel: text('channel').$type<PaymentChannel>().notNull(),
     externalId: text('external_id').notNull().unique(),
     status: text('status').notNull(),
     currentPeriodStart: timestamp('current_period_start'),
@@ -148,7 +149,7 @@ export const webhookEvents = pgTable('webhook_events', {
     .default(sql`pg_catalog.gen_random_uuid()`)
     .primaryKey(),
   externalId: text('external_id').notNull().unique(),
-  channel: text('channel').notNull(),
+  channel: text('channel').$type<PaymentChannel>().notNull(),
   type: text('type').notNull(),
   processedAt: timestamp('processed_at').defaultNow().notNull(),
 });

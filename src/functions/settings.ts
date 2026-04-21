@@ -1,12 +1,13 @@
 import { createServerFn } from '@tanstack/react-start';
 import { eq, and, inArray } from 'drizzle-orm';
+import { z } from 'zod';
 import { db } from '@/database';
 import { userSettings } from '@/database/schemas/settings';
 import { authMiddleware } from '@/middleware/auth';
 
 export const getUserSettings = createServerFn()
   .middleware([authMiddleware])
-  .inputValidator((data?: { keys?: string[] }) => data)
+  .inputValidator(z.object({ keys: z.array(z.string().min(1)).max(50).optional() }).optional())
   .handler(async ({ data, context }) => {
     const conditions = [eq(userSettings.userId, context.user.id)];
 
@@ -24,7 +25,7 @@ export const getUserSettings = createServerFn()
 
 export const updateUserSetting = createServerFn({ method: 'POST' })
   .middleware([authMiddleware])
-  .inputValidator((data: { key: string; value: string }) => data)
+  .inputValidator(z.object({ key: z.string().min(1), value: z.string() }))
   .handler(async ({ data, context }) => {
     await db
       .insert(userSettings)

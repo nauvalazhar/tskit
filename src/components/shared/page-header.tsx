@@ -4,7 +4,7 @@ export function PageHeader({ children }: React.ComponentProps<'header'>) {
   return (
     <header
       className={cn(
-        'mb-6 pb-6 border-b border-separator',
+        'mb-8',
         '**:data-[slot="tabline"]:mt-4',
         'has-data-[slot="tabline"]:pb-0',
       )}

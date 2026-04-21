@@ -1,14 +1,13 @@
 import { ResetPasswordForm } from '@/components/auth/reset-password-form';
 import { createFileRoute } from '@tanstack/react-router';
+import { z } from 'zod';
 
-type ResetPasswordSearch = {
-  token?: string;
-};
+const searchSchema = z.object({
+  token: z.string().optional(),
+});
 
 export const Route = createFileRoute('/_auth/reset-password')({
-  validateSearch: (search: Record<string, unknown>): ResetPasswordSearch => ({
-    token: typeof search.token === 'string' ? search.token : undefined,
-  }),
+  validateSearch: searchSchema,
   component: RouteComponent,
 });
 

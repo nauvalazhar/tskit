@@ -1,35 +1,15 @@
 'use client';
 
-import * as React from 'react';
-import { Field as BaseField } from '@base-ui/react/field';
 import { cn } from '@/lib/utils.ts';
 
 export function Field({
   className,
   ...props
-}: React.ComponentProps<typeof BaseField.Root>) {
+}: React.ComponentProps<'div'>) {
   return (
-    <BaseField.Root
+    <div
       data-slot="field"
       className={cn('flex gap-2 flex-col', className)}
-      {...props}
-    />
-  );
-}
-
-export function FieldItem({
-  className,
-  ...props
-}: React.ComponentProps<typeof BaseField.Item>) {
-  return (
-    <BaseField.Item
-      data-slot="field-item"
-      className={cn(
-        'grid items-center gap-x-3 gap-y-1 not-last:mb-2.5',
-        'grid-cols-[auto_1fr]',
-        '[&_[data-slot=field-description]]:col-start-2',
-        className,
-      )}
       {...props}
     />
   );
@@ -38,9 +18,9 @@ export function FieldItem({
 export function FieldLabel({
   className,
   ...props
-}: React.ComponentProps<typeof BaseField.Label>) {
+}: React.ComponentProps<'label'>) {
   return (
-    <BaseField.Label
+    <label
       data-slot="field-label"
       className={cn('text-foreground flex items-center gap-3', className)}
       {...props}
@@ -51,9 +31,9 @@ export function FieldLabel({
 export function FieldDescription({
   className,
   ...props
-}: React.ComponentProps<typeof BaseField.Description>) {
+}: React.ComponentProps<'p'>) {
   return (
-    <BaseField.Description
+    <p
       data-slot="field-description"
       className={cn('text-muted text-sm leading-relaxed', className)}
       {...props}
@@ -64,24 +44,12 @@ export function FieldDescription({
 export function FieldError({
   className,
   ...props
-}: React.ComponentProps<typeof BaseField.Error>) {
+}: React.ComponentProps<'span'>) {
   return (
-    <BaseField.Error
+    <span
       data-slot="field-error"
-      className={cn('text-danger', className)}
+      className={cn('text-danger text-sm', className)}
       {...props}
     />
   );
-}
-
-export function FieldValidity({
-  ...props
-}: React.ComponentProps<typeof BaseField.Validity>) {
-  return <BaseField.Validity data-slot="field-validity" {...props} />;
-}
-
-export function FieldControl({
-  ...props
-}: React.ComponentProps<typeof BaseField.Control>) {
-  return <BaseField.Control data-slot="field-control" {...props} />;
 }

@@ -57,6 +57,13 @@
       "when": 1773955200000,
       "tag": "0007_multi-channel-billing",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1773670487636,
+      "tag": "0008_demonic_thunderbolt_ross",
+      "breakpoints": true
     }
   ]
 }

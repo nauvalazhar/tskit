@@ -67,6 +67,9 @@ src/
 │   ├── settings/                    # Profile, password, 2FA, avatar, sessions list
 │   └── shared/                      # Error boundary, not-found, page header, tabline
 │
+├── validations/                     # Shared Zod schemas (importable by all layers)
+│   └── admin.ts                     # Admin search/filter schemas
+│
 ├── services/                        # Business logic + DB queries
 │   ├── plan.service.ts
 │   ├── subscription.service.ts
@@ -145,6 +148,7 @@ src/
 routes → components → queries → functions → services → database/
                                            → lib/*    → core/drivers
                               middleware ↗
+           ↘ validations/ ← (importable by all layers, no app imports)
 ```
 
 - `routes/` — thin shells. Loader calls `ensureQueryData`, renders components. No business logic.
@@ -154,6 +158,7 @@ routes → components → queries → functions → services → database/
 - `lib/` — facades over `core/`. Daily-driver imports (`storage`, `mailer`, `payment`).
 - `core/drivers/` — know *how* (S3, Resend, Stripe) but not *where*. Config-injected.
 - `config/` — only place env vars are read. Defines named channels.
+- `validations/` — shared Zod schemas. Leaf dependency — no imports from app code. Importable by all layers.
 - `emails/` — server-only. Each file exports `subject` + default component.
 
 **Server-only safety:** Services, `lib/` facades, `core/` drivers, and DB code must always be called through `createServerFn` wrappers in `functions/`. Never call them directly from components.
@@ -199,6 +204,7 @@ Session fetched once in `__root.tsx` → flows via route context → layout rout
 | Schema file | `<domain>.ts` | `billing.ts` |
 | Config file | `<domain>.ts` | `payment.ts` |
 | Hook | `use-<name>.ts` | `use-subscription.ts` |
+| Validation file | `<domain>.ts` | `admin.ts` |
 
 ## What's Implemented
 
@@ -218,16 +224,11 @@ Session fetched once in `__root.tsx` → flows via route context → layout rout
 ## What's Planned (Not Yet Implemented)
 
 - Team/organization UI (Better Auth org plugin is wired but no UI exists)
-- API key management (no `services/api-key.service.ts`, no schema)
-- Outgoing webhooks (no `services/webhook.service.ts`)
 - Background jobs / queue system (no `core/drivers/queue/`, no `jobs/`, no `lib/queue.ts`)
 - Rate limiting (no `lib/rate-limit.ts`)
+- Audit log
 - Admin dashboard pages (only stub `admin/index.tsx` exists)
 - Admin middleware (`middleware/admin.ts` does not exist)
-- File management service
-- Notification system
-- Audit log
-- Test suite (Vitest configured, no tests written)
 
 ## Common Tasks
 
@@ -253,7 +254,7 @@ Session fetched once in `__root.tsx` → flows via route context → layout rout
 
 ## Rules for AI Agents
 
-- **DO NOT** reference or create: `src/jobs/`, `src/validation/`, `core/drivers/queue/`, `lib/queue.ts`, `lib/rate-limit.ts`, `middleware/admin.ts` — these don't exist
+- **DO NOT** reference or create: `src/jobs/`, `core/drivers/queue/`, `lib/queue.ts`, `lib/rate-limit.ts` — these don't exist
 - **DO NOT** use class-based services. Existing services use named function exports.
 - **DO NOT** import from `core/` or `config/` in components or routes — use `lib/` facades
 - **DO NOT** call services or DB directly from components — always go through `functions/`

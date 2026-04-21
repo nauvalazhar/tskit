@@ -1,12 +1,12 @@
 import { render } from '@react-email/render';
-import { mailConfig } from '@/config/mail';
+import { mailConfig, type MailChannel } from '@/config/mail';
 import { createEmailDriver } from '@/core/drivers/email';
 import type { EmailDriver } from '@/core/drivers/email/types';
 import { loadTemplate, type EmailTemplates } from '@/emails';
 
 class Mailer {
   private drivers = new Map<string, EmailDriver>();
-  private channel: string | undefined;
+  private channel: MailChannel | undefined;
 
   private resolve(): EmailDriver {
     const name = this.channel || mailConfig.default;
@@ -18,7 +18,7 @@ class Mailer {
     return this.drivers.get(name)!;
   }
 
-  use(name: string): Mailer {
+  use(name: MailChannel): Mailer {
     const scoped = new Mailer();
     scoped.drivers = this.drivers;
     scoped.channel = name;

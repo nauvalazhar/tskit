@@ -1,6 +1,8 @@
 import { betterAuth } from 'better-auth';
+import type { BetterAuthOptions } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { twoFactor } from 'better-auth/plugins/two-factor';
+import { admin } from 'better-auth/plugins/admin';
 import { eq } from 'drizzle-orm';
 import { db } from '@/database';
 import { users } from '@/database/schemas/auth';
@@ -10,7 +12,7 @@ import { storage } from '@/lib/storage';
 import { customSession } from 'better-auth/plugins';
 import { subscriptions } from '@/database/schemas/billing';
 
-export const auth = betterAuth({
+const options = {
   baseURL: process.env.VITE_APP_URL || 'http://localhost:3000',
   advanced: {
     database: {
@@ -91,6 +93,14 @@ export const auth = betterAuth({
   plugins: [
     tanstackStartCookies(),
     twoFactor(),
+    admin(),
+  ],
+} satisfies BetterAuthOptions;
+
+export const auth = betterAuth({
+  ...options,
+  plugins: [
+    ...(options.plugins ?? []),
     customSession(async ({ user, session }) => {
       const subscription = await db.query.subscriptions.findFirst({
         where: eq(subscriptions.userId, user.id),
@@ -104,6 +114,6 @@ export const auth = betterAuth({
           subscription,
         },
       };
-    }),
+    }, options),
   ],
 });

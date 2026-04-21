@@ -1,10 +1,10 @@
-import { storageConfig } from '@/config/storage';
+import { storageConfig, type StorageChannel } from '@/config/storage';
 import { createStorageDriver } from '@/core/drivers/storage';
 import type { StorageDriver, StorageObject } from '@/core/drivers/storage/types';
 
 class Storage {
   private drivers = new Map<string, StorageDriver>();
-  private channel: string | undefined;
+  private channel: StorageChannel | undefined;
 
   private resolve(): StorageDriver {
     const name = this.channel || storageConfig.default;
@@ -16,7 +16,7 @@ class Storage {
     return this.drivers.get(name)!;
   }
 
-  use(name: string): Storage {
+  use(name: StorageChannel): Storage {
     const scoped = new Storage();
     scoped.drivers = this.drivers;
     scoped.channel = name;

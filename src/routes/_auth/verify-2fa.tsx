@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useForm } from '@tanstack/react-form';
 import { Button } from '@/components/selia/button';
 import {
   Card,
@@ -27,40 +28,39 @@ function RouteComponent() {
   const [useBackupCode, setUseBackupCode] = useState(false);
   const router = useRouter();
 
-  const handleVerify = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setError(null);
-    setPending(true);
+  const form = useForm({
+    defaultValues: { code: '' },
+    onSubmit: async ({ value }) => {
+      setError(null);
+      setPending(true);
 
-    const formData = new FormData(e.currentTarget);
-    const code = formData.get('code') as string;
+      if (useBackupCode) {
+        const { error } = await authClient.twoFactor.verifyBackupCode({
+          code: value.code,
+        });
 
-    if (useBackupCode) {
-      const { error } = await authClient.twoFactor.verifyBackupCode({
-        code,
-      });
+        setPending(false);
 
-      setPending(false);
+        if (error) {
+          setError(error.message || 'Invalid backup code.');
+          return;
+        }
+      } else {
+        const { error } = await authClient.twoFactor.verifyTotp({
+          code: value.code,
+        });
 
-      if (error) {
-        setError(error.message || 'Invalid backup code.');
-        return;
+        setPending(false);
+
+        if (error) {
+          setError(error.message || 'Invalid verification code.');
+          return;
+        }
       }
-    } else {
-      const { error } = await authClient.twoFactor.verifyTotp({
-        code,
-      });
 
-      setPending(false);
-
-      if (error) {
-        setError(error.message || 'Invalid verification code.');
-        return;
-      }
-    }
-
-    router.navigate({ to: '/dashboard' });
-  };
+      router.navigate({ to: '/dashboard' });
+    },
+  });
 
   return (
     <div className="w-full lg:h-screen flex items-center justify-center p-4">
@@ -74,29 +74,51 @@ function RouteComponent() {
           </CardDescription>
         </CardHeader>
         <CardBody className="flex flex-col gap-5">
-          <Form onSubmit={handleVerify}>
-            <Field>
-              <FieldLabel htmlFor="2fa-code">
-                {useBackupCode ? 'Backup Code' : 'Verification Code'}
-              </FieldLabel>
-              <Input
-                id="2fa-code"
-                name="code"
-                type="text"
-                inputMode={useBackupCode ? 'text' : 'numeric'}
-                pattern={useBackupCode ? undefined : '[0-9]{6}'}
-                maxLength={useBackupCode ? undefined : 6}
-                placeholder={useBackupCode ? 'Enter backup code' : '000000'}
-                autoComplete="one-time-code"
-                required
-              />
-              <FieldError match="valueMissing">Code is required</FieldError>
-              {!useBackupCode && (
-                <FieldError match="patternMismatch">
-                  Enter a 6-digit code
-                </FieldError>
+          <Form
+            onSubmit={(e) => {
+              e.preventDefault();
+              form.handleSubmit();
+            }}
+          >
+            <form.Field
+              name="code"
+              validators={{
+                onSubmit: ({ value }) => {
+                  if (!value) return 'Code is required';
+                  if (!useBackupCode && !/^[0-9]{6}$/.test(value))
+                    return 'Enter a 6-digit code';
+                  return undefined;
+                },
+                onChange: ({ value }) => {
+                  if (!value) return 'Code is required';
+                  if (!useBackupCode && !/^[0-9]{6}$/.test(value))
+                    return 'Enter a 6-digit code';
+                  return undefined;
+                },
+              }}
+            >
+              {(field) => (
+                <Field>
+                  <FieldLabel htmlFor="2fa-code">
+                    {useBackupCode ? 'Backup Code' : 'Verification Code'}
+                  </FieldLabel>
+                  <Input
+                    id="2fa-code"
+                    type="text"
+                    inputMode={useBackupCode ? 'text' : 'numeric'}
+                    maxLength={useBackupCode ? undefined : 6}
+                    placeholder={useBackupCode ? 'Enter backup code' : '000000'}
+                    autoComplete="one-time-code"
+                    value={field.state.value}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    onBlur={field.handleBlur}
+                  />
+                  {field.state.meta.errors.map((err, i) => (
+                    <FieldError key={i}>{err}</FieldError>
+                  ))}
+                </Field>
               )}
-            </Field>
+            </form.Field>
             {error && (
               <Alert variant="danger">
                 <CircleAlert />
