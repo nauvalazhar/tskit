@@ -15,6 +15,7 @@ import {
   CreditCardIcon,
   LayoutDashboardIcon,
   PackageIcon,
+  ScrollTextIcon,
   UsersIcon,
 } from 'lucide-react';
 import { Link } from '@tanstack/react-router';
@@ -58,6 +59,12 @@ export function AdminSidebar() {
                 <SidebarItemButton render={<Link to="/admin/plans" />}>
                   <PackageIcon />
                   Plans
+                </SidebarItemButton>
+              </SidebarItem>
+              <SidebarItem>
+                <SidebarItemButton render={<Link to="/admin/audit" />}>
+                  <ScrollTextIcon />
+                  Audit Log
                 </SidebarItemButton>
               </SidebarItem>
             </SidebarList>

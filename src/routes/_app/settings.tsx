@@ -7,7 +7,7 @@ import {
   Outlet,
   useLocation,
 } from '@tanstack/react-router';
-import { LockIcon, Settings2Icon, ShieldIcon, UserIcon } from 'lucide-react';
+import { ActivityIcon, LockIcon, Settings2Icon, ShieldIcon, UserIcon } from 'lucide-react';
 
 export const Route = createFileRoute('/_app/settings')({
   component: RouteComponent,
@@ -45,6 +45,14 @@ function RouteComponent() {
             >
               <ShieldIcon />
               Security
+            </TablineItem>
+            <TablineItem
+              nativeButton={false}
+              value="/settings/activity"
+              render={<Link to="/settings/activity" />}
+            >
+              <ActivityIcon />
+              Activity
             </TablineItem>
             <TablineItem
               nativeButton={false}

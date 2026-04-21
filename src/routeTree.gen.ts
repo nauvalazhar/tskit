@@ -16,6 +16,7 @@ import { Route as AppRouteRouteImport } from './routes/_app/route'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as MarketingIndexRouteImport } from './routes/_marketing/index'
 import { Route as AdminSubscriptionsRouteImport } from './routes/admin/subscriptions'
+import { Route as AdminAuditRouteImport } from './routes/admin/audit'
 import { Route as MarketingPricingRouteImport } from './routes/_marketing/pricing'
 import { Route as AuthVerify2faRouteImport } from './routes/_auth/verify-2fa'
 import { Route as AuthResetPasswordRouteImport } from './routes/_auth/reset-password'
@@ -38,6 +39,7 @@ import { Route as AdminPlansPlanIdRouteImport } from './routes/admin/plans.$plan
 import { Route as AppSettingsSecurityRouteImport } from './routes/_app/settings.security'
 import { Route as AppSettingsPreferencesRouteImport } from './routes/_app/settings.preferences'
 import { Route as AppSettingsAdvancedRouteImport } from './routes/_app/settings.advanced'
+import { Route as AppSettingsActivityRouteImport } from './routes/_app/settings.activity'
 import { Route as AppBillingSuccessRouteImport } from './routes/_app/billing.success'
 
 const AdminRouteRoute = AdminRouteRouteImport.update({
@@ -70,6 +72,11 @@ const MarketingIndexRoute = MarketingIndexRouteImport.update({
 const AdminSubscriptionsRoute = AdminSubscriptionsRouteImport.update({
   id: '/subscriptions',
   path: '/subscriptions',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminAuditRoute = AdminAuditRouteImport.update({
+  id: '/audit',
+  path: '/audit',
   getParentRoute: () => AdminRouteRoute,
 } as any)
 const MarketingPricingRoute = MarketingPricingRouteImport.update({
@@ -182,6 +189,11 @@ const AppSettingsAdvancedRoute = AppSettingsAdvancedRouteImport.update({
   path: '/advanced',
   getParentRoute: () => AppSettingsRoute,
 } as any)
+const AppSettingsActivityRoute = AppSettingsActivityRouteImport.update({
+  id: '/activity',
+  path: '/activity',
+  getParentRoute: () => AppSettingsRoute,
+} as any)
 const AppBillingSuccessRoute = AppBillingSuccessRouteImport.update({
   id: '/success',
   path: '/success',
@@ -200,9 +212,11 @@ export interface FileRoutesByFullPath {
   '/reset-password': typeof AuthResetPasswordRoute
   '/verify-2fa': typeof AuthVerify2faRoute
   '/pricing': typeof MarketingPricingRoute
+  '/admin/audit': typeof AdminAuditRoute
   '/admin/subscriptions': typeof AdminSubscriptionsRoute
   '/admin/': typeof AdminIndexRoute
   '/billing/success': typeof AppBillingSuccessRoute
+  '/settings/activity': typeof AppSettingsActivityRoute
   '/settings/advanced': typeof AppSettingsAdvancedRoute
   '/settings/preferences': typeof AppSettingsPreferencesRoute
   '/settings/security': typeof AppSettingsSecurityRoute
@@ -226,9 +240,11 @@ export interface FileRoutesByTo {
   '/reset-password': typeof AuthResetPasswordRoute
   '/verify-2fa': typeof AuthVerify2faRoute
   '/pricing': typeof MarketingPricingRoute
+  '/admin/audit': typeof AdminAuditRoute
   '/admin/subscriptions': typeof AdminSubscriptionsRoute
   '/admin': typeof AdminIndexRoute
   '/billing/success': typeof AppBillingSuccessRoute
+  '/settings/activity': typeof AppSettingsActivityRoute
   '/settings/advanced': typeof AppSettingsAdvancedRoute
   '/settings/preferences': typeof AppSettingsPreferencesRoute
   '/settings/security': typeof AppSettingsSecurityRoute
@@ -258,10 +274,12 @@ export interface FileRoutesById {
   '/_auth/reset-password': typeof AuthResetPasswordRoute
   '/_auth/verify-2fa': typeof AuthVerify2faRoute
   '/_marketing/pricing': typeof MarketingPricingRoute
+  '/admin/audit': typeof AdminAuditRoute
   '/admin/subscriptions': typeof AdminSubscriptionsRoute
   '/_marketing/': typeof MarketingIndexRoute
   '/admin/': typeof AdminIndexRoute
   '/_app/billing/success': typeof AppBillingSuccessRoute
+  '/_app/settings/activity': typeof AppSettingsActivityRoute
   '/_app/settings/advanced': typeof AppSettingsAdvancedRoute
   '/_app/settings/preferences': typeof AppSettingsPreferencesRoute
   '/_app/settings/security': typeof AppSettingsSecurityRoute
@@ -290,9 +308,11 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/verify-2fa'
     | '/pricing'
+    | '/admin/audit'
     | '/admin/subscriptions'
     | '/admin/'
     | '/billing/success'
+    | '/settings/activity'
     | '/settings/advanced'
     | '/settings/preferences'
     | '/settings/security'
@@ -316,9 +336,11 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/verify-2fa'
     | '/pricing'
+    | '/admin/audit'
     | '/admin/subscriptions'
     | '/admin'
     | '/billing/success'
+    | '/settings/activity'
     | '/settings/advanced'
     | '/settings/preferences'
     | '/settings/security'
@@ -347,10 +369,12 @@ export interface FileRouteTypes {
     | '/_auth/reset-password'
     | '/_auth/verify-2fa'
     | '/_marketing/pricing'
+    | '/admin/audit'
     | '/admin/subscriptions'
     | '/_marketing/'
     | '/admin/'
     | '/_app/billing/success'
+    | '/_app/settings/activity'
     | '/_app/settings/advanced'
     | '/_app/settings/preferences'
     | '/_app/settings/security'
@@ -425,6 +449,13 @@ declare module '@tanstack/react-router' {
       path: '/subscriptions'
       fullPath: '/admin/subscriptions'
       preLoaderRoute: typeof AdminSubscriptionsRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/audit': {
+      id: '/admin/audit'
+      path: '/audit'
+      fullPath: '/admin/audit'
+      preLoaderRoute: typeof AdminAuditRouteImport
       parentRoute: typeof AdminRouteRoute
     }
     '/_marketing/pricing': {
@@ -581,6 +612,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSettingsAdvancedRouteImport
       parentRoute: typeof AppSettingsRoute
     }
+    '/_app/settings/activity': {
+      id: '/_app/settings/activity'
+      path: '/activity'
+      fullPath: '/settings/activity'
+      preLoaderRoute: typeof AppSettingsActivityRouteImport
+      parentRoute: typeof AppSettingsRoute
+    }
     '/_app/billing/success': {
       id: '/_app/billing/success'
       path: '/success'
@@ -606,6 +644,7 @@ const AppBillingRouteWithChildren = AppBillingRoute._addFileChildren(
 )
 
 interface AppSettingsRouteChildren {
+  AppSettingsActivityRoute: typeof AppSettingsActivityRoute
   AppSettingsAdvancedRoute: typeof AppSettingsAdvancedRoute
   AppSettingsPreferencesRoute: typeof AppSettingsPreferencesRoute
   AppSettingsSecurityRoute: typeof AppSettingsSecurityRoute
@@ -613,6 +652,7 @@ interface AppSettingsRouteChildren {
 }
 
 const AppSettingsRouteChildren: AppSettingsRouteChildren = {
+  AppSettingsActivityRoute: AppSettingsActivityRoute,
   AppSettingsAdvancedRoute: AppSettingsAdvancedRoute,
   AppSettingsPreferencesRoute: AppSettingsPreferencesRoute,
   AppSettingsSecurityRoute: AppSettingsSecurityRoute,
@@ -674,6 +714,7 @@ const MarketingRouteRouteWithChildren = MarketingRouteRoute._addFileChildren(
 )
 
 interface AdminRouteRouteChildren {
+  AdminAuditRoute: typeof AdminAuditRoute
   AdminSubscriptionsRoute: typeof AdminSubscriptionsRoute
   AdminIndexRoute: typeof AdminIndexRoute
   AdminPlansPlanIdRoute: typeof AdminPlansPlanIdRoute
@@ -684,6 +725,7 @@ interface AdminRouteRouteChildren {
 }
 
 const AdminRouteRouteChildren: AdminRouteRouteChildren = {
+  AdminAuditRoute: AdminAuditRoute,
   AdminSubscriptionsRoute: AdminSubscriptionsRoute,
   AdminIndexRoute: AdminIndexRoute,
   AdminPlansPlanIdRoute: AdminPlansPlanIdRoute,

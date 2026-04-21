@@ -50,11 +50,12 @@ src/
 │   │   ├── settings.index.tsx       # Profile
 │   │   ├── settings.security.tsx    # Password & 2FA
 │   │   ├── settings.preferences.tsx # Theme
+│   │   ├── settings.activity.tsx    # Activity log
 │   │   └── settings.advanced.tsx    # Delete account
 │   ├── _marketing/                  # Public pages
 │   │   ├── index.tsx                # Landing page
 │   │   └── pricing.tsx              # Pricing page
-│   ├── admin/                       # Admin (stub — role guard exists)
+│   ├── admin/                       # Admin pages (overview, users, subscriptions, plans, audit)
 │   └── api/
 │       ├── auth.$.ts                # Better Auth handler
 │       └── webhooks/stripe.ts       # Stripe webhook
@@ -64,22 +65,36 @@ src/
 │   ├── app/                         # App shell, email verification banner
 │   ├── auth/                        # Login, signup, forgot/reset password forms
 │   ├── billing/                     # Plan card, checkout, cancel, change plan, status
-│   ├── settings/                    # Profile, password, 2FA, avatar, sessions list
+│   ├── settings/                    # Profile, password, 2FA, avatar, sessions list, activity log
 │   └── shared/                      # Error boundary, not-found, page header, tabline
 │
 ├── validations/                     # Shared Zod schemas (importable by all layers)
-│   └── admin.ts                     # Admin search/filter schemas
+│   ├── admin.ts                     # Admin search/filter schemas
+│   └── audit.ts                     # Audit log query schemas
 │
 ├── services/                        # Business logic + DB queries
+│   ├── admin/                       # Admin-specific services (split by domain)
+│   │   ├── overview.service.ts
+│   │   ├── users.service.ts
+│   │   ├── subscriptions.service.ts
+│   │   └── plans.service.ts
 │   ├── plan.service.ts
 │   ├── subscription.service.ts
-│   └── usage.service.ts
+│   ├── usage.service.ts
+│   └── audit.service.ts
 │
 ├── functions/                       # Server functions (RPC boundary)
+│   ├── admin/                       # Admin server functions (split by domain)
+│   │   ├── overview.ts
+│   │   ├── users.ts
+│   │   ├── subscriptions.ts
+│   │   ├── plans.ts
+│   │   └── audit.ts
 │   ├── auth.ts                      # getSession, listUserAccounts
 │   ├── billing.ts                   # checkout, plans, subscription, cancel
 │   ├── settings.ts                  # updateProfile, updateTheme, deleteAccount
-│   └── storage.ts                   # uploadAvatar
+│   ├── storage.ts                   # uploadAvatar
+│   └── audit.ts                     # getUserAuditLogs
 │
 ├── emails/                          # React Email templates (server-only)
 │   ├── verify-email.tsx
@@ -90,7 +105,14 @@ src/
 │   └── index.ts                     # Template type map
 │
 ├── queries/
-│   └── billing.queries.ts           # TanStack Query option factories
+│   ├── admin/                       # Admin query option factories (split by domain)
+│   │   ├── overview.queries.ts
+│   │   ├── users.queries.ts
+│   │   ├── subscriptions.queries.ts
+│   │   ├── plans.queries.ts
+│   │   └── audit.queries.ts
+│   ├── billing.queries.ts           # TanStack Query option factories
+│   └── audit.queries.ts            # User audit log query options
 │
 ├── hooks/
 │   ├── use-email-verified.ts
@@ -115,6 +137,7 @@ src/
 │   ├── storage.ts                   # storage.upload(), storage.use('private')
 │   ├── mailer.ts                    # mailer.send(template, to, data)
 │   ├── payment.ts                   # payment.checkout(), payment.portal()
+│   ├── audit.ts                     # Audit log facade
 │   ├── api-response.ts              # apiError(), apiSuccess() for API routes
 │   ├── logger.ts                    # Pino + captureException()
 │   ├── theme.ts                     # Theme utilities
@@ -128,7 +151,8 @@ src/
 │   ├── schemas/
 │   │   ├── auth.ts                  # user, session, account, verification
 │   │   ├── billing.ts               # plans, customers, subscriptions, usage, webhookEvents
-│   │   └── settings.ts              # User settings
+│   │   ├── settings.ts              # User settings
+│   │   └── audit.ts                 # Audit log
 │   └── migrations/
 │
 ├── core/drivers/                    # Portable, config-injected driver classes
@@ -180,6 +204,9 @@ Plans store `entitlements` as JSONB (`{ projects: 3, analytics: true }`). Check 
 ### Usage Tracking
 `usage.service.ts` tracks per-user consumption with lazy period reset. Operates on `userId` + `featureKey`, not orgId.
 
+### Audit Logging
+`audit.service.ts` records who did what. Log via `audit.log()` facade from `lib/audit.ts`. Action names use dot-notation: `domain.resource.verb` (e.g., `billing.checkout.created`, `admin.user.banned`). Query logs via `getAuditLogs` server function (admin only, cursor-paginated).
+
 ### Session Flow
 Session fetched once in `__root.tsx` → flows via route context → layout routes guard access in `beforeLoad` → components read via `Route.useRouteContext()`.
 
@@ -218,6 +245,9 @@ Session fetched once in `__root.tsx` → flows via route context → layout rout
 - Logging: Pino structured logging with captureException
 - Design system: 27 Selia UI components
 - Marketing: landing page, pricing page
+- Audit logging: schema, service, facade, wired into auth/settings/billing/storage/admin server functions
+- Audit log UI: admin page (`/admin/audit`) + user settings tab (`/settings/activity`)
+- Admin dashboard: overview, users, subscriptions, plans, audit log
 - Database seed script
 - API response helpers
 
@@ -225,10 +255,6 @@ Session fetched once in `__root.tsx` → flows via route context → layout rout
 
 - Team/organization UI (Better Auth org plugin is wired but no UI exists)
 - Background jobs / queue system (no `core/drivers/queue/`, no `jobs/`, no `lib/queue.ts`)
-- Rate limiting (no `lib/rate-limit.ts`)
-- Audit log
-- Admin dashboard pages (only stub `admin/index.tsx` exists)
-- Admin middleware (`middleware/admin.ts` does not exist)
 
 ## Common Tasks
 

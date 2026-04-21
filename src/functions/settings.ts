@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { db } from '@/database';
 import { userSettings } from '@/database/schemas/settings';
 import { authMiddleware } from '@/middleware/auth';
+import { audit } from '@/lib/audit';
 
 export const getUserSettings = createServerFn()
   .middleware([authMiddleware])
@@ -38,4 +39,10 @@ export const updateUserSetting = createServerFn({ method: 'POST' })
         target: [userSettings.userId, userSettings.key],
         set: { value: data.value },
       });
+
+    await audit.log({
+      actorId: context.user.id,
+      action: 'settings.profile.updated',
+      metadata: { key: data.key },
+    });
   });

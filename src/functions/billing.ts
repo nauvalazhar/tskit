@@ -9,6 +9,7 @@ import {
   updateSubscriptionPlan,
 } from '@/services/subscription.service';
 import { payment } from '@/lib/payment';
+import { audit } from '@/lib/audit';
 import type { PaymentChannel } from '@/config/payment';
 
 const defaultRateLimit = createRateLimitMiddleware('default');
@@ -29,10 +30,20 @@ export const createCheckout = createServerFn({ method: 'POST' })
   .handler(async ({ data, context }) => {
     const baseUrl = process.env.VITE_APP_URL || 'http://localhost:3000';
 
-    return payment.checkout(context.user.id, data.planId, {
+    const result = await payment.checkout(context.user.id, data.planId, {
       success: `${baseUrl}/billing/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel: `${baseUrl}/billing?canceled=true`,
     });
+
+    await audit.log({
+      actorId: context.user.id,
+      action: 'billing.checkout.created',
+      targetType: 'plan',
+      targetId: data.planId,
+
+    });
+
+    return result;
   });
 
 export const createPortalSession = createServerFn({ method: 'POST' })
@@ -50,6 +61,14 @@ export const cancelSubscription = createServerFn({ method: 'POST' })
 
     await payment.use(sub.channel as PaymentChannel).cancelSubscription(sub.externalId);
     await markSubscriptionCanceled(sub.externalId);
+
+    await audit.log({
+      actorId: context.user.id,
+      action: 'billing.subscription.cancelled',
+      targetType: 'subscription',
+      targetId: sub.externalId,
+
+    });
   });
 
 export const changePlan = createServerFn({ method: 'POST' })
