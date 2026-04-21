@@ -40,7 +40,7 @@ export const Route = createRootRouteWithContext<{
         content: 'width=device-width, initial-scale=1',
       },
       {
-        title: 'TSKit',
+        title: import.meta.env.VITE_APP_NAME,
       },
     ],
     links: [

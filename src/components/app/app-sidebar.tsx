@@ -49,7 +49,7 @@ export function AppSidebar() {
             alt="Selia"
             className="size-8"
           />
-          <span className="font-semibold">Selia</span>
+          <span className="font-semibold">{import.meta.env.VITE_APP_NAME}</span>
         </SidebarLogo>
       </SidebarHeader>
       <SidebarContent>

@@ -39,7 +39,7 @@ export default function TeamInvitationEmail({
               </Text>
               <Text className="text-base leading-relaxed text-[#484848] my-4">
                 {inviterName} ({inviterEmail}) has invited you to join their team
-                on TSKit.
+                on {process.env.VITE_APP_NAME}.
               </Text>
               <Text className="text-base leading-relaxed text-[#484848] my-4">
                 Click the button below to accept the invitation and join the
