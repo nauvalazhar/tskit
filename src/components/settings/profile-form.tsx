@@ -61,8 +61,6 @@ export function ProfileForm({
       <form.Field
         name="name"
         validators={{
-          onSubmit: ({ value }) =>
-            !value ? 'Please enter your name.' : undefined,
           onChange: ({ value }) =>
             !value ? 'Please enter your name.' : undefined,
         }}

@@ -56,8 +56,6 @@ export function ChangePasswordForm() {
       <form.Field
         name="currentPassword"
         validators={{
-          onSubmit: ({ value }) =>
-            !value ? 'Current password is required' : undefined,
           onChange: ({ value }) =>
             !value ? 'Current password is required' : undefined,
         }}
@@ -82,8 +80,6 @@ export function ChangePasswordForm() {
       <form.Field
         name="newPassword"
         validators={{
-          onSubmit: ({ value }) =>
-            !value ? 'New password is required' : undefined,
           onChange: ({ value }) =>
             !value ? 'New password is required' : undefined,
         }}
@@ -108,12 +104,6 @@ export function ChangePasswordForm() {
       <form.Field
         name="confirmNewPassword"
         validators={{
-          onSubmit: ({ value }) => {
-            if (!value) return 'Please confirm your new password';
-            if (value !== form.getFieldValue('newPassword'))
-              return 'Passwords do not match';
-            return undefined;
-          },
           onChange: ({ value }) => {
             if (!value) return 'Please confirm your new password';
             if (value !== form.getFieldValue('newPassword'))

@@ -80,12 +80,6 @@ export function LoginForm() {
             <form.Field
               name="email"
               validators={{
-                onSubmit: ({ value }) =>
-                  !value
-                    ? 'Email is required'
-                    : !/\S+@\S+\.\S+/.test(value)
-                      ? 'Please enter a valid email'
-                      : undefined,
                 onChange: ({ value }) =>
                   !value
                     ? 'Email is required'
@@ -114,8 +108,6 @@ export function LoginForm() {
             <form.Field
               name="password"
               validators={{
-                onSubmit: ({ value }) =>
-                  !value ? 'Password is required' : undefined,
                 onChange: ({ value }) =>
                   !value ? 'Password is required' : undefined,
               }}

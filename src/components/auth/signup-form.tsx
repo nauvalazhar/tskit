@@ -81,8 +81,6 @@ export function SignUpForm() {
             <form.Field
               name="name"
               validators={{
-                onSubmit: ({ value }) =>
-                  !value ? 'Name is required' : undefined,
                 onChange: ({ value }) =>
                   !value ? 'Name is required' : undefined,
               }}
@@ -108,12 +106,6 @@ export function SignUpForm() {
             <form.Field
               name="email"
               validators={{
-                onSubmit: ({ value }) =>
-                  !value
-                    ? 'Email is required'
-                    : !/\S+@\S+\.\S+/.test(value)
-                      ? 'Please enter a valid email'
-                      : undefined,
                 onChange: ({ value }) =>
                   !value
                     ? 'Email is required'
@@ -142,8 +134,6 @@ export function SignUpForm() {
             <form.Field
               name="password"
               validators={{
-                onSubmit: ({ value }) =>
-                  !value ? 'Password is required' : undefined,
                 onChange: ({ value }) =>
                   !value ? 'Password is required' : undefined,
               }}
@@ -168,12 +158,6 @@ export function SignUpForm() {
             <form.Field
               name="confirmPassword"
               validators={{
-                onSubmit: ({ value }) => {
-                  if (!value) return 'Please confirm your password';
-                  if (value !== form.getFieldValue('password'))
-                    return 'Passwords do not match';
-                  return undefined;
-                },
                 onChange: ({ value }) => {
                   if (!value) return 'Please confirm your password';
                   if (value !== form.getFieldValue('password'))
@@ -204,10 +188,6 @@ export function SignUpForm() {
             <form.Field
               name="terms"
               validators={{
-                onSubmit: ({ value }) =>
-                  !value
-                    ? 'You must agree to the terms and conditions'
-                    : undefined,
                 onChange: ({ value }) =>
                   !value
                     ? 'You must agree to the terms and conditions'

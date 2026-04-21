@@ -96,8 +96,6 @@ export function EnableTwoFactorForm({ onSuccess }: { onSuccess: () => void }) {
         <passwordForm.Field
           name="password"
           validators={{
-            onSubmit: ({ value }) =>
-              !value ? 'Password is required' : undefined,
             onChange: ({ value }) =>
               !value ? 'Password is required' : undefined,
           }}
@@ -187,11 +185,6 @@ export function EnableTwoFactorForm({ onSuccess }: { onSuccess: () => void }) {
       <verifyForm.Field
         name="code"
         validators={{
-          onSubmit: ({ value }) => {
-            if (!value) return 'Code is required';
-            if (!/^[0-9]{6}$/.test(value)) return 'Enter a 6-digit code';
-            return undefined;
-          },
           onChange: ({ value }) => {
             if (!value) return 'Code is required';
             if (!/^[0-9]{6}$/.test(value)) return 'Enter a 6-digit code';

@@ -83,12 +83,6 @@ function RouteComponent() {
             <form.Field
               name="code"
               validators={{
-                onSubmit: ({ value }) => {
-                  if (!value) return 'Code is required';
-                  if (!useBackupCode && !/^[0-9]{6}$/.test(value))
-                    return 'Enter a 6-digit code';
-                  return undefined;
-                },
                 onChange: ({ value }) => {
                   if (!value) return 'Code is required';
                   if (!useBackupCode && !/^[0-9]{6}$/.test(value))

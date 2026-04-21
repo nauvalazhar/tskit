@@ -65,8 +65,6 @@ export function DisableTwoFactorForm({
         <form.Field
           name="password"
           validators={{
-            onSubmit: ({ value }) =>
-              !value ? 'Password is required' : undefined,
             onChange: ({ value }) =>
               !value ? 'Password is required' : undefined,
           }}

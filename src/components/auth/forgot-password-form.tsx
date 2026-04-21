@@ -79,12 +79,6 @@ export function ForgotPasswordForm() {
                 <form.Field
                   name="email"
                   validators={{
-                    onSubmit: ({ value }) =>
-                      !value
-                        ? 'Email is required'
-                        : !/\S+@\S+\.\S+/.test(value)
-                          ? 'Please enter a valid email'
-                          : undefined,
                     onChange: ({ value }) =>
                       !value
                         ? 'Email is required'

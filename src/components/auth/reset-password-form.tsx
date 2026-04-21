@@ -93,8 +93,6 @@ export function ResetPasswordForm({ token }: { token?: string }) {
             <form.Field
               name="password"
               validators={{
-                onSubmit: ({ value }) =>
-                  !value ? 'Password is required' : undefined,
                 onChange: ({ value }) =>
                   !value ? 'Password is required' : undefined,
               }}
@@ -119,12 +117,6 @@ export function ResetPasswordForm({ token }: { token?: string }) {
             <form.Field
               name="confirmPassword"
               validators={{
-                onSubmit: ({ value }) => {
-                  if (!value) return 'Please confirm your password';
-                  if (value !== form.getFieldValue('password'))
-                    return 'Passwords do not match';
-                  return undefined;
-                },
                 onChange: ({ value }) => {
                   if (!value) return 'Please confirm your password';
                   if (value !== form.getFieldValue('password'))

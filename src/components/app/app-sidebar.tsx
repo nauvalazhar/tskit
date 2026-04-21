@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
-import { useRouteContext } from '@tanstack/react-router';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useRouter, useRouteContext } from '@tanstack/react-router';
 import {
   Sidebar,
   SidebarContent,
@@ -34,6 +34,7 @@ import {
 } from '@/components/selia/menu';
 import { authClient } from '@/lib/auth-client';
 import { setActiveTeam } from '@/functions/team';
+import { teamListQuery } from '@/queries/team.queries';
 import { UserAvatar } from '../shared/user-avatar';
 import { CreateTeamDialog } from './create-team-dialog';
 import { Link } from '@tanstack/react-router';
@@ -87,8 +88,9 @@ export function AppSidebar() {
 function UserMenu() {
   const { data: session, error } = authClient.useSession();
   const { activeOrganization } = useRouteContext({ from: '__root__' });
-  const { data: orgs } = authClient.useListOrganizations();
+  const { data: orgs } = useQuery(teamListQuery());
   const queryClient = useQueryClient();
+  const router = useRouter();
   const [createOpen, setCreateOpen] = useState(false);
 
   if (!session || error) {
@@ -100,7 +102,7 @@ function UserMenu() {
   const handleSwitch = async (orgId: string) => {
     await setActiveTeam({ data: { organizationId: orgId } });
     queryClient.invalidateQueries({ queryKey: ['teams'] });
-    window.location.reload();
+    await router.invalidate();
   };
 
   return (

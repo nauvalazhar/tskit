@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useForm } from '@tanstack/react-form';
 import { useRouter } from '@tanstack/react-router';
 import { Button } from '@/components/selia/button';
 import { Input } from '@/components/selia/input';
@@ -22,6 +23,7 @@ import {
   DialogFooter,
   DialogClose,
 } from '@/components/selia/dialog';
+import { Form } from '@/components/selia/form';
 import { toastManager } from '@/components/selia/toast';
 import { inviteMember } from '@/functions/team';
 import { PlusIcon } from 'lucide-react';
@@ -33,34 +35,43 @@ const ROLE_OPTIONS: SelectItemType[] = [
 
 export function TeamInviteForm() {
   const [open, setOpen] = useState(false);
-  const [email, setEmail] = useState('');
-  const [role, setRole] = useState<SelectItemType>(ROLE_OPTIONS[0]);
-  const [error, setError] = useState('');
   const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setPending(true);
+  const form = useForm({
+    defaultValues: {
+      email: '',
+      role: ROLE_OPTIONS[0] as SelectItemType,
+    },
+    onSubmit: async ({ value }) => {
+      setError(null);
+      setPending(true);
 
-    try {
-      await inviteMember({ data: { email, role: role.value as 'admin' | 'member' } });
-      await router.invalidate();
-      toastManager.add({
-        title: 'Invitation sent',
-        description: `An invitation has been sent to ${email}.`,
-        type: 'success',
-      });
-      setEmail('');
-      setRole(ROLE_OPTIONS[0]);
-      setOpen(false);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to send invitation');
-    } finally {
-      setPending(false);
-    }
-  };
+      try {
+        await inviteMember({
+          data: {
+            email: value.email,
+            role: value.role.value as 'admin' | 'member',
+          },
+        });
+        await router.invalidate();
+        toastManager.add({
+          title: 'Invitation sent',
+          description: `An invitation has been sent to ${value.email}.`,
+          type: 'success',
+        });
+        form.reset();
+        setOpen(false);
+      } catch (err) {
+        setError(
+          err instanceof Error ? err.message : 'Failed to send invitation',
+        );
+      } finally {
+        setPending(false);
+      }
+    },
+  });
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -69,7 +80,12 @@ export function TeamInviteForm() {
         Invite member
       </Button>
       <DialogPopup>
-        <form onSubmit={handleSubmit}>
+        <Form
+          onSubmit={(e) => {
+            e.preventDefault();
+            form.handleSubmit();
+          }}
+        >
           <DialogHeader>
             <DialogTitle>Invite a team member</DialogTitle>
           </DialogHeader>
@@ -77,37 +93,60 @@ export function TeamInviteForm() {
             <DialogDescription>
               Send an invitation email to add a new member to your team.
             </DialogDescription>
-            <Field>
-              <FieldLabel htmlFor="invite-email">Email address</FieldLabel>
-              <Input
-                id="invite-email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="colleague@example.com"
-                required
-              />
-            </Field>
-            <Field>
-              <FieldLabel>Role</FieldLabel>
-              <Select
-                value={role}
-                onValueChange={(v) => setRole(v as SelectItemType)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Role" />
-                </SelectTrigger>
-                <SelectPopup>
-                  <SelectList>
-                    {ROLE_OPTIONS.map((item) => (
-                      <SelectItem key={item.value} value={item}>
-                        {item.label}
-                      </SelectItem>
-                    ))}
-                  </SelectList>
-                </SelectPopup>
-              </Select>
-            </Field>
+            <form.Field
+              name="email"
+              validators={{
+                onChange: ({ value }) =>
+                  !value
+                    ? 'Email is required'
+                    : !/\S+@\S+\.\S+/.test(value)
+                      ? 'Please enter a valid email'
+                      : undefined,
+              }}
+            >
+              {(field) => (
+                <Field>
+                  <FieldLabel htmlFor="invite-email">Email address</FieldLabel>
+                  <Input
+                    id="invite-email"
+                    type="email"
+                    value={field.state.value}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    onBlur={field.handleBlur}
+                    placeholder="colleague@example.com"
+                  />
+                  {field.state.meta.errors.map((err, i) => (
+                    <FieldError key={i}>{err}</FieldError>
+                  ))}
+                </Field>
+              )}
+            </form.Field>
+            <form.Field name="role">
+              {(field) => (
+                <Field>
+                  <FieldLabel>Role</FieldLabel>
+                  <Select
+                    value={field.state.value}
+                    onValueChange={(v) =>
+                      field.handleChange(v as SelectItemType)
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Role" />
+                    </SelectTrigger>
+                    <SelectPopup>
+                      <SelectList>
+                        {ROLE_OPTIONS.map((item) => (
+                          <SelectItem key={item.value} value={item}>
+                            {item.label}
+                          </SelectItem>
+                        ))}
+                      </SelectList>
+                    </SelectPopup>
+                  </Select>
+                </Field>
+              )}
+            </form.Field>
             {error && <FieldError>{error}</FieldError>}
           </DialogBody>
           <DialogFooter>
@@ -116,7 +155,7 @@ export function TeamInviteForm() {
               Send invitation
             </Button>
           </DialogFooter>
-        </form>
+        </Form>
       </DialogPopup>
     </Dialog>
   );

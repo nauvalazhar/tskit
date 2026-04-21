@@ -140,8 +140,6 @@ export function PlanForm({
                 <form.Field
                   name="name"
                   validators={{
-                    onSubmit: ({ value }) =>
-                      !value ? 'Name is required' : undefined,
                     onChange: ({ value }) =>
                       !value ? 'Name is required' : undefined,
                   }}
@@ -169,8 +167,6 @@ export function PlanForm({
                 <form.Field
                   name="slug"
                   validators={{
-                    onSubmit: ({ value }) =>
-                      !value ? 'Slug is required' : undefined,
                     onChange: ({ value }) =>
                       !value ? 'Slug is required' : undefined,
                   }}
@@ -219,7 +215,7 @@ export function PlanForm({
               <form.Field
                 name="price"
                 validators={{
-                  onSubmit: ({ value }) =>
+                  onChange: ({ value }) =>
                     value === undefined || value === null
                       ? 'Price is required'
                       : undefined,

@@ -1,5 +1,7 @@
 import { useState } from 'react';
+import { useForm } from '@tanstack/react-form';
 import { useQueryClient } from '@tanstack/react-query';
+import { useRouter } from '@tanstack/react-router';
 import {
   Dialog,
   DialogPopup,
@@ -12,6 +14,7 @@ import {
 import { Button } from '@/components/selia/button';
 import { Input } from '@/components/selia/input';
 import { Field, FieldLabel, FieldError } from '@/components/selia/field';
+import { Form } from '@/components/selia/form';
 import { setActiveTeam, createTeam } from '@/functions/team';
 
 export function CreateTeamDialog({
@@ -21,80 +24,113 @@ export function CreateTeamDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
-  const [name, setName] = useState('');
-  const [slug, setSlug] = useState('');
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const queryClient = useQueryClient();
+  const router = useRouter();
 
-  const handleNameChange = (value: string) => {
-    setName(value);
-    setSlug(
-      value
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/^-|-$/g, ''),
-    );
-  };
+  const form = useForm({
+    defaultValues: { name: '', slug: '' },
+    onSubmit: async ({ value }) => {
+      setError(null);
+      setPending(true);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setLoading(true);
-
-    try {
-      const org = await createTeam({ data: { name, slug } });
-      await setActiveTeam({ data: { organizationId: org.id } });
-      queryClient.invalidateQueries({ queryKey: ['teams'] });
-      onOpenChange(false);
-      setName('');
-      setSlug('');
-      window.location.reload();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create team');
-    } finally {
-      setLoading(false);
-    }
-  };
+      try {
+        const org = await createTeam({ data: value });
+        await setActiveTeam({ data: { organizationId: org.id } });
+        queryClient.invalidateQueries({ queryKey: ['teams'] });
+        onOpenChange(false);
+        form.reset();
+        await router.invalidate();
+      } catch (err) {
+        setError(
+          err instanceof Error ? err.message : 'Failed to create team',
+        );
+      } finally {
+        setPending(false);
+      }
+    },
+  });
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogPopup>
-        <form onSubmit={handleSubmit}>
+        <Form
+          onSubmit={(e) => {
+            e.preventDefault();
+            form.handleSubmit();
+          }}
+        >
           <DialogHeader>
             <DialogTitle>Create a new team</DialogTitle>
           </DialogHeader>
           <DialogBody className="space-y-4">
-            <Field>
-              <FieldLabel htmlFor="team-name">Team name</FieldLabel>
-              <Input
-                id="team-name"
-                value={name}
-                onChange={(e) => handleNameChange(e.target.value)}
-                placeholder="Acme Inc."
-                required
-              />
-            </Field>
-            <Field>
-              <FieldLabel htmlFor="team-slug">URL slug</FieldLabel>
-              <Input
-                id="team-slug"
-                value={slug}
-                onChange={(e) => setSlug(e.target.value)}
-                placeholder="acme-inc"
-                pattern="[a-z0-9-]+"
-                required
-              />
-            </Field>
+            <form.Field
+              name="name"
+              validators={{
+                onChange: ({ value }) =>
+                  !value ? 'Team name is required' : undefined,
+              }}
+            >
+              {(field) => (
+                <Field>
+                  <FieldLabel htmlFor="team-name">Team name</FieldLabel>
+                  <Input
+                    id="team-name"
+                    value={field.state.value}
+                    onChange={(e) => {
+                      const name = e.target.value;
+                      field.handleChange(name);
+                      form.setFieldValue('slug', name
+                        .toLowerCase()
+                        .replace(/[^a-z0-9]+/g, '-')
+                        .replace(/^-|-$/g, ''));
+                    }}
+                    onBlur={field.handleBlur}
+                    placeholder="Acme Inc."
+                  />
+                  {field.state.meta.errors.map((err, i) => (
+                    <FieldError key={i}>{err}</FieldError>
+                  ))}
+                </Field>
+              )}
+            </form.Field>
+            <form.Field
+              name="slug"
+              validators={{
+                onChange: ({ value }) =>
+                  !value
+                    ? 'URL slug is required'
+                    : !/^[a-z0-9-]+$/.test(value)
+                      ? 'Slug must be lowercase alphanumeric with hyphens'
+                      : undefined,
+              }}
+            >
+              {(field) => (
+                <Field>
+                  <FieldLabel htmlFor="team-slug">URL slug</FieldLabel>
+                  <Input
+                    id="team-slug"
+                    value={field.state.value}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    onBlur={field.handleBlur}
+                    placeholder="acme-inc"
+                  />
+                  {field.state.meta.errors.map((err, i) => (
+                    <FieldError key={i}>{err}</FieldError>
+                  ))}
+                </Field>
+              )}
+            </form.Field>
             {error && <FieldError>{error}</FieldError>}
           </DialogBody>
           <DialogFooter>
             <DialogClose>Cancel</DialogClose>
-            <Button type="submit" variant="primary" progress={loading}>
+            <Button type="submit" variant="primary" progress={pending}>
               Create team
             </Button>
           </DialogFooter>
-        </form>
+        </Form>
       </DialogPopup>
     </Dialog>
   );
