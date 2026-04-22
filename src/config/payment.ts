@@ -3,7 +3,7 @@ import { paymentDriverConfigSchema } from '@/core/drivers/payment/types';
 
 const paymentChannelsSchema = z.object({
   stripe: paymentDriverConfigSchema,
-  polar: paymentDriverConfigSchema,
+  // polar: paymentDriverConfigSchema,
 });
 
 const paymentConfigSchema = z.object({
@@ -20,12 +20,12 @@ export const paymentConfig = paymentConfigSchema.parse({
       webhookSecret: process.env.STRIPE_WEBHOOK_SECRET,
       publicKey: process.env.VITE_STRIPE_PUBLISHABLE_KEY,
     },
-    polar: {
-      driver: 'polar',
-      secretKey: process.env.POLAR_ACCESS_TOKEN,
-      webhookSecret: process.env.POLAR_WEBHOOK_SECRET,
-      publicKey: process.env.POLAR_SERVER,
-    },
+    // polar: {
+    //   driver: 'polar',
+    //   secretKey: process.env.POLAR_ACCESS_TOKEN,
+    //   webhookSecret: process.env.POLAR_WEBHOOK_SECRET,
+    //   publicKey: process.env.POLAR_SERVER,
+    // },
   },
 });
 

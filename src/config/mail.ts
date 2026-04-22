@@ -3,7 +3,7 @@ import { mailDriverConfigSchema } from '@/core/drivers/email/types';
 
 const mailChannelsSchema = z.object({
   resend: mailDriverConfigSchema,
-  sendgrid: mailDriverConfigSchema,
+  // sendgrid: mailDriverConfigSchema,
 });
 
 const mailConfigSchema = z.object({
@@ -19,11 +19,11 @@ export const mailConfig = mailConfigSchema.parse({
       apiKey: process.env.RESEND_API_KEY,
       from: process.env.EMAIL_FROM,
     },
-    sendgrid: {
-      driver: 'sendgrid',
-      apiKey: process.env.SENDGRID_API_KEY,
-      from: process.env.EMAIL_FROM,
-    },
+    // sendgrid: {
+    //   driver: 'sendgrid',
+    //   apiKey: process.env.SENDGRID_API_KEY,
+    //   from: process.env.EMAIL_FROM,
+    // },
   },
 });
 

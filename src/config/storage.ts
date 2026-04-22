@@ -3,7 +3,7 @@ import { storageDriverConfigSchema } from '@/core/drivers/storage/types';
 
 const storageChannelsSchema = z.object({
   public: storageDriverConfigSchema,
-  private: storageDriverConfigSchema,
+  // private: storageDriverConfigSchema,
 });
 
 const storageConfigSchema = z.object({
@@ -24,15 +24,15 @@ export const storageConfig = storageConfigSchema.parse({
       },
       publicUrl: process.env.S3_PUBLIC_URL,
     },
-    private: {
-      driver: 's3',
-      bucket: process.env.S3_PRIVATE_BUCKET || 'tskit-private',
-      endpoint: process.env.S3_ENDPOINT,
-      credentials: {
-        accessKeyId: process.env.S3_ACCESS_KEY_ID,
-        secretAccessKey: process.env.S3_SECRET_ACCESS_KEY,
-      },
-    },
+    // private: {
+    //   driver: 's3',
+    //   bucket: process.env.S3_PRIVATE_BUCKET,
+    //   endpoint: process.env.S3_ENDPOINT,
+    //   credentials: {
+    //     accessKeyId: process.env.S3_ACCESS_KEY_ID,
+    //     secretAccessKey: process.env.S3_SECRET_ACCESS_KEY,
+    //   },
+    // },
   },
 });
 
