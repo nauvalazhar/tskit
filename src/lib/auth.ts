@@ -4,9 +4,9 @@ import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { twoFactor } from 'better-auth/plugins/two-factor';
 import { admin } from 'better-auth/plugins/admin';
 import { organization } from 'better-auth/plugins/organization';
-import { eq, asc, and } from 'drizzle-orm';
+import { eq, asc, and, count } from 'drizzle-orm';
 import { db } from '@/database';
-import { users, members } from '@/database/schemas/auth';
+import { users, members, organizations } from '@/database/schemas/auth';
 import { userSettings } from '@/database/schemas/settings';
 import { tanstackStartCookies } from 'better-auth/tanstack-start';
 import { mailer } from '@/lib/mailer';
@@ -117,8 +117,23 @@ const options = {
     deleteUser: {
       enabled: true,
       beforeDelete: async (user, request) => {
-        // Add pre-deletion logic here.
-        // Throw APIError to prevent deletion.
+        // Delete any orgs where this user is the sole member
+        const userMembers = await db.query.members.findMany({
+          where: eq(members.userId, user.id),
+        });
+
+        for (const membership of userMembers) {
+          const [{ memberCount }] = await db
+            .select({ memberCount: count() })
+            .from(members)
+            .where(eq(members.organizationId, membership.organizationId));
+
+          if (memberCount === 1) {
+            await db
+              .delete(organizations)
+              .where(eq(organizations.id, membership.organizationId));
+          }
+        }
       },
       afterDelete: async (user) => {
         if (user.image) {

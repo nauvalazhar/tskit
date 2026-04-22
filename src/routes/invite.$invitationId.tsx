@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { createFileRoute, redirect, useRouter } from '@tanstack/react-router';
+import { pageTitle } from '@/lib/utils';
 import { Heading } from '@/components/selia/heading';
 import { Text } from '@/components/selia/text';
 import { Button } from '@/components/selia/button';
@@ -9,11 +10,15 @@ import {
   acceptInvitation,
   rejectInvitation,
   getInvitation,
+  setActiveTeam,
 } from '@/functions/team';
 import { toastManager } from '@/components/selia/toast';
 import { CheckIcon, XIcon } from 'lucide-react';
 
 export const Route = createFileRoute('/invite/$invitationId')({
+  head: () => ({
+    meta: [{ title: pageTitle('Team Invitation') }],
+  }),
   beforeLoad: async ({ context }) => {
     if (!context.session?.user) {
       throw redirect({ to: '/login' });
@@ -42,6 +47,10 @@ function RouteComponent() {
     setPending('accept');
     try {
       await acceptInvitation({ data: { invitationId } });
+      // Switch to the newly joined team
+      if (invitation?.organizationId) {
+        await setActiveTeam({ data: { organizationId: invitation.organizationId } });
+      }
       toastManager.add({
         title: 'Invitation accepted',
         description: `You have joined ${orgName}.`,

@@ -2,6 +2,7 @@ import { Heading } from '@/components/selia/heading';
 import { Text } from '@/components/selia/text';
 import { Divider } from '@/components/selia/divider';
 import { createFileRoute } from '@tanstack/react-router';
+import { pageTitle } from '@/lib/utils';
 import { TeamMembersList } from '@/components/settings/team-members-list';
 import { TeamInviteForm } from '@/components/settings/team-invite-form';
 import { TeamInvitationsList } from '@/components/settings/team-invitations-list';
@@ -14,6 +15,9 @@ import {
 } from '@/functions/team';
 
 export const Route = createFileRoute('/_app/settings/team/members')({
+  head: () => ({
+    meta: [{ title: pageTitle('Team Members') }],
+  }),
   loader: async ({ context }) => {
     const [activeOrg, role] = await Promise.all([
       getActiveOrganization(),
@@ -83,6 +87,7 @@ function RouteComponent() {
             members={members}
             currentUserId={currentUserId}
             currentUserRole={currentUserRole}
+            organizationId={activeOrg.id}
           />
         </div>
       </div>

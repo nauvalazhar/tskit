@@ -91,6 +91,14 @@ export const deleteTeam = createServerFn({ method: 'POST' })
   .middleware([defaultRateLimit, authMiddleware])
   .inputValidator(deleteTeamSchema)
   .handler(async ({ data, context }) => {
+    // Ensure user has at least one other team
+    const memberships = await db.query.members.findMany({
+      where: eq(members.userId, context.user.id),
+    });
+    if (memberships.length <= 1) {
+      throw new Error('You cannot delete your only team');
+    }
+
     const headers = await getRequestHeaders();
     const org = await auth.api.deleteOrganization({
       body: { organizationId: data.organizationId },
@@ -302,6 +310,32 @@ export const getInvitation = createServerFn()
       inviterName: inviter?.name ?? null,
       inviterImage: inviter?.image ?? null,
     };
+  });
+
+export const leaveTeam = createServerFn({ method: 'POST' })
+  .middleware([authMiddleware])
+  .inputValidator(z.object({ organizationId: z.string().min(1) }))
+  .handler(async ({ data, context }) => {
+    // Ensure user has at least one other team
+    const memberships = await db.query.members.findMany({
+      where: eq(members.userId, context.user.id),
+    });
+    if (memberships.length <= 1) {
+      throw new Error('You cannot leave your only team');
+    }
+
+    const headers = await getRequestHeaders();
+    await auth.api.leaveOrganization({
+      body: { organizationId: data.organizationId },
+      headers,
+    });
+
+    await audit.log({
+      actorId: context.user.id,
+      action: 'team.member.left',
+      targetType: 'organization',
+      targetId: data.organizationId,
+    });
   });
 
 export const checkSlug = createServerFn()

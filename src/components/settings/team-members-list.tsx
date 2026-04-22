@@ -10,7 +10,7 @@ import {
 } from '@/components/selia/menu';
 import { UserAvatar } from '@/components/shared/user-avatar';
 import { toastManager } from '@/components/selia/toast';
-import { removeMember, updateMemberRole } from '@/functions/team';
+import { removeMember, updateMemberRole, leaveTeam } from '@/functions/team';
 import type { TeamMember } from '@/validations/team';
 import { EllipsisIcon } from 'lucide-react';
 
@@ -30,13 +30,34 @@ export function TeamMembersList({
   members,
   currentUserId,
   currentUserRole,
+  organizationId,
 }: {
   members: TeamMember[];
   currentUserId: string;
   currentUserRole: string;
+  organizationId: string;
 }) {
   const router = useRouter();
   const canManage = currentUserRole === 'owner' || currentUserRole === 'admin';
+  const isOwner = currentUserRole === 'owner';
+
+  const handleLeave = async () => {
+    try {
+      await leaveTeam({ data: { organizationId } });
+      toastManager.add({
+        title: 'Left team',
+        type: 'success',
+      });
+      window.location.href = '/dashboard';
+    } catch (err) {
+      toastManager.add({
+        title: 'Error',
+        description:
+          err instanceof Error ? err.message : 'Failed to leave team.',
+        type: 'error',
+      });
+    }
+  };
 
   const handleRemove = async (memberIdOrEmail: string) => {
     try {
@@ -80,7 +101,7 @@ export function TeamMembersList({
     <div className="flex flex-col divide-y divide-card-border">
       {members.map((member) => {
         const isCurrentUser = member.userId === currentUserId;
-        const isOwner = member.role === 'owner';
+        const isMemberOwner = member.role === 'owner';
 
         return (
           <div
@@ -103,7 +124,12 @@ export function TeamMembersList({
             <Badge variant={ROLE_VARIANTS[member.role] ?? 'secondary'}>
               {ROLE_LABELS[member.role] ?? member.role}
             </Badge>
-            {canManage && !isCurrentUser && !isOwner && (
+            {isCurrentUser && !isMemberOwner && (
+              <Button variant="plain" size="xs" onClick={handleLeave}>
+                Leave
+              </Button>
+            )}
+            {canManage && !isCurrentUser && !isMemberOwner && (
               <Menu>
                 <MenuTrigger
                   render={
@@ -113,7 +139,7 @@ export function TeamMembersList({
                   }
                 />
                 <MenuPopup side="bottom" align="end">
-                  {currentUserRole === 'owner' && (
+                  {isOwner && (
                     <>
                       <MenuItem
                         onClick={() =>
