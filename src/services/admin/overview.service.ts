@@ -1,12 +1,13 @@
 import { eq, or, count, sql, desc } from 'drizzle-orm';
 import { db } from '@/database';
-import { users } from '@/database/schemas/auth';
+import { users, organizations } from '@/database/schemas/auth';
 import { plans, subscriptions } from '@/database/schemas/billing';
 
 export async function getOverviewStats() {
-  const [[{ totalUsers }], [{ activeSubscriptions }], [{ mrr }], [{ recentSignups }]] =
+  const [[{ totalUsers }], [{ totalTeams }], [{ activeSubscriptions }], [{ mrr }], [{ recentSignups }]] =
     await Promise.all([
       db.select({ totalUsers: count() }).from(users),
+      db.select({ totalTeams: count() }).from(organizations),
       db
         .select({ activeSubscriptions: count() })
         .from(subscriptions)
@@ -36,12 +37,13 @@ export async function getOverviewStats() {
     db.query.subscriptions.findMany({
       orderBy: desc(subscriptions.createdAt),
       limit: 5,
-      with: { user: true, plan: true },
+      with: { user: true, plan: true, organization: true },
     }),
   ]);
 
   return {
     totalUsers,
+    totalTeams,
     activeSubscriptions,
     mrr: Number(mrr),
     recentSignups,

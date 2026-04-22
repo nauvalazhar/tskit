@@ -34,6 +34,7 @@ type RecentSubscription = {
   createdAt: Date;
   user: { name: string; email: string };
   plan: { name: string };
+  organization: { name: string } | null;
 };
 
 export function RecentActivity({
@@ -107,7 +108,7 @@ export function RecentActivity({
                     className={i === recentSubscriptions.length - 1 ? 'rounded-b-xl' : undefined}
                   >
                     <ItemContent>
-                      <ItemTitle>{sub.user.name}</ItemTitle>
+                      <ItemTitle>{sub.organization?.name ?? sub.user.name}</ItemTitle>
                       <ItemDescription className="text-sm">
                         {sub.plan.name}
                       </ItemDescription>

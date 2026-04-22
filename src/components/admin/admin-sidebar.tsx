@@ -12,6 +12,7 @@ import {
 } from '@/components/selia/sidebar';
 import {
   ArrowLeftIcon,
+  Building2Icon,
   CreditCardIcon,
   LayoutDashboardIcon,
   PackageIcon,
@@ -47,6 +48,12 @@ export function AdminSidebar() {
                 <SidebarItemButton render={<Link to="/admin/users" />}>
                   <UsersIcon />
                   Users
+                </SidebarItemButton>
+              </SidebarItem>
+              <SidebarItem>
+                <SidebarItemButton render={<Link to="/admin/teams" />}>
+                  <Building2Icon />
+                  Teams
                 </SidebarItemButton>
               </SidebarItem>
               <SidebarItem>

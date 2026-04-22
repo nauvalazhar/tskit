@@ -19,61 +19,70 @@ export function UserSubscription() {
   const { userId } = routeApi.useParams();
   const user = useSuspenseQuery(adminUserQuery(userId)).data!;
 
+  const subs = user.subscriptions ?? [];
+
   return (
     <Card>
       <CardBody>
         <CardSubsection>
-          <CardSubsectionTitle>Subscription</CardSubsectionTitle>
+          <CardSubsectionTitle>Subscriptions</CardSubsectionTitle>
           <CardSubsectionDescription>
-            Current plan and billing period
+            Subscriptions via teams this user belongs to
           </CardSubsectionDescription>
         </CardSubsection>
-        {user.subscription ? (
-          <Item size="sm">
-            <ItemContent>
-              <ItemTitle className="flex items-center gap-2">
-                {user.subscription.plan.name}
-                <Badge
-                  variant={
-                    getSubscriptionStatus(user.subscription.status)?.variant ??
-                    'secondary'
-                  }
-                >
-                  {getSubscriptionStatus(user.subscription.status)?.label ??
-                    user.subscription.status}
-                </Badge>
-              </ItemTitle>
-              {user.subscription.currentPeriodStart &&
-                user.subscription.currentPeriodEnd && (
-                  <ItemDescription className="text-sm">
-                    {new Date(
-                      user.subscription.currentPeriodStart,
-                    ).toLocaleDateString()}{' '}
-                    &ndash;{' '}
-                    {new Date(
-                      user.subscription.currentPeriodEnd,
-                    ).toLocaleDateString()}
-                  </ItemDescription>
-                )}
-            </ItemContent>
-            <ItemAction>
-              <Button
-                variant="outline"
-                size="sm"
-                nativeButton={false}
-                render={
-                  <Link
-                    to="/admin/subscriptions"
-                    search={{ search: user.email }}
-                  />
-                }
-              >
-                View
-              </Button>
-            </ItemAction>
-          </Item>
+        {subs.length > 0 ? (
+          <div className="space-y-3">
+            {subs.map((sub) => {
+              const org = (sub as Record<string, unknown>).organization as
+                | { name: string }
+                | undefined;
+              return (
+                <Item key={sub.id} size="sm">
+                  <ItemContent>
+                    <ItemTitle className="flex items-center gap-2">
+                      {sub.plan.name}
+                      <Badge
+                        variant={
+                          getSubscriptionStatus(sub.status)?.variant ??
+                          'secondary'
+                        }
+                      >
+                        {getSubscriptionStatus(sub.status)?.label ?? sub.status}
+                      </Badge>
+                    </ItemTitle>
+                    <ItemDescription className="text-sm">
+                      {org?.name ?? 'Unknown team'}
+                      {sub.currentPeriodStart && sub.currentPeriodEnd && (
+                        <>
+                          {' '}&middot;{' '}
+                          {new Date(sub.currentPeriodStart).toLocaleDateString()}{' '}
+                          &ndash;{' '}
+                          {new Date(sub.currentPeriodEnd).toLocaleDateString()}
+                        </>
+                      )}
+                    </ItemDescription>
+                  </ItemContent>
+                  <ItemAction>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      nativeButton={false}
+                      render={
+                        <Link
+                          to="/admin/subscriptions"
+                          search={{ search: org?.name }}
+                        />
+                      }
+                    >
+                      View
+                    </Button>
+                  </ItemAction>
+                </Item>
+              );
+            })}
+          </div>
         ) : (
-          <p className="text-muted text-sm">No active subscription</p>
+          <p className="text-muted text-sm">No subscriptions</p>
         )}
       </CardBody>
     </Card>

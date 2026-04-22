@@ -1,6 +1,6 @@
 import { eq, ilike, or, count, desc } from 'drizzle-orm';
 import { db } from '@/database';
-import { users, sessions, accounts } from '@/database/schemas/auth';
+import { users, sessions, accounts, members } from '@/database/schemas/auth';
 import { subscriptions } from '@/database/schemas/billing';
 
 export async function listUsersAdmin({
@@ -27,6 +27,11 @@ export async function listUsersAdmin({
       orderBy: desc(users.createdAt),
       limit: perPage,
       offset,
+      with: {
+        members: {
+          with: { organizations: true },
+        },
+      },
     }),
     db.select({ total: count() }).from(users).where(where),
   ]);
@@ -45,10 +50,14 @@ export async function getUserAdmin(userId: string) {
 
   if (!user) return null;
 
-  const [subscription, userAccounts, [{ sessionCount }]] = await Promise.all([
-    db.query.subscriptions.findFirst({
+  const [userMembers, userSubscriptions, userAccounts, [{ sessionCount }]] = await Promise.all([
+    db.query.members.findMany({
+      where: eq(members.userId, userId),
+      with: { organizations: true },
+    }),
+    db.query.subscriptions.findMany({
       where: eq(subscriptions.userId, userId),
-      with: { plan: true },
+      with: { plan: true, organization: true },
     }),
     db.query.accounts.findMany({
       where: eq(accounts.userId, userId),
@@ -61,7 +70,13 @@ export async function getUserAdmin(userId: string) {
 
   return {
     ...user,
-    subscription: subscription ?? null,
+    teams: userMembers.map((m) => ({
+      id: m.organizations.id,
+      name: m.organizations.name,
+      slug: m.organizations.slug,
+      role: m.role,
+    })),
+    subscriptions: userSubscriptions,
     accounts: userAccounts,
     sessionCount,
   };

@@ -20,7 +20,16 @@ export async function listSubscriptionsAdmin({
   if (search) {
     const pattern = `%${search}%`;
     conditions.push(
-      sql`${subscriptions.userId} in (select "users"."id" from "users" where "users"."name" ilike ${pattern} or "users"."email" ilike ${pattern})`,
+      sql`(
+        ${subscriptions.organizationId} in (
+          select "organizations"."id" from "organizations"
+          where "organizations"."name" ilike ${pattern}
+        )
+        or ${subscriptions.userId} in (
+          select "users"."id" from "users"
+          where "users"."name" ilike ${pattern} or "users"."email" ilike ${pattern}
+        )
+      )`,
     );
   }
 
@@ -32,7 +41,7 @@ export async function listSubscriptionsAdmin({
       orderBy: desc(subscriptions.createdAt),
       limit: perPage,
       offset,
-      with: { user: true, plan: true },
+      with: { user: true, plan: true, organization: true },
     }),
     db.select({ total: count() }).from(subscriptions).where(where),
   ]);

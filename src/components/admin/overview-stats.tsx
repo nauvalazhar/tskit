@@ -1,8 +1,9 @@
 import { Card, CardBody } from '@/components/selia/card';
-import { CreditCardIcon, DollarSignIcon, UserPlusIcon, UsersIcon } from 'lucide-react';
+import { Building2Icon, CreditCardIcon, DollarSignIcon, UserPlusIcon, UsersIcon } from 'lucide-react';
 
 type Stats = {
   totalUsers: number;
+  totalTeams: number;
   activeSubscriptions: number;
   mrr: number;
   recentSignups: number;
@@ -14,6 +15,11 @@ export function OverviewStats({ stats }: { stats: Stats }) {
       label: 'Total Users',
       value: stats.totalUsers.toLocaleString(),
       icon: UsersIcon,
+    },
+    {
+      label: 'Total Teams',
+      value: stats.totalTeams.toLocaleString(),
+      icon: Building2Icon,
     },
     {
       label: 'Active Subscriptions',
@@ -33,7 +39,7 @@ export function OverviewStats({ stats }: { stats: Stats }) {
   ];
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
       {cards.map((card) => (
         <Card key={card.label}>
           <CardBody className="flex items-center gap-4">

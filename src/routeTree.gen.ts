@@ -28,6 +28,7 @@ import { Route as AppSettingsRouteImport } from './routes/_app/settings'
 import { Route as AppDashboardRouteImport } from './routes/_app/dashboard'
 import { Route as AppBillingRouteImport } from './routes/_app/billing'
 import { Route as AdminUsersIndexRouteImport } from './routes/admin/users.index'
+import { Route as AdminTeamsIndexRouteImport } from './routes/admin/teams.index'
 import { Route as AdminPlansIndexRouteImport } from './routes/admin/plans.index'
 import { Route as AppSettingsIndexRouteImport } from './routes/_app/settings.index'
 import { Route as AppBillingIndexRouteImport } from './routes/_app/billing.index'
@@ -35,6 +36,7 @@ import { Route as ApiWebhooksStripeRouteImport } from './routes/api/webhooks/str
 import { Route as ApiWebhooksPolarRouteImport } from './routes/api/webhooks/polar'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth.$'
 import { Route as AdminUsersUserIdRouteImport } from './routes/admin/users.$userId'
+import { Route as AdminTeamsTeamIdRouteImport } from './routes/admin/teams.$teamId'
 import { Route as AdminPlansCreateRouteImport } from './routes/admin/plans.create'
 import { Route as AdminPlansPlanIdRouteImport } from './routes/admin/plans.$planId'
 import { Route as AppSettingsTeamRouteImport } from './routes/_app/settings.team'
@@ -138,6 +140,11 @@ const AdminUsersIndexRoute = AdminUsersIndexRouteImport.update({
   path: '/users/',
   getParentRoute: () => AdminRouteRoute,
 } as any)
+const AdminTeamsIndexRoute = AdminTeamsIndexRouteImport.update({
+  id: '/teams/',
+  path: '/teams/',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
 const AdminPlansIndexRoute = AdminPlansIndexRouteImport.update({
   id: '/plans/',
   path: '/plans/',
@@ -171,6 +178,11 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
 const AdminUsersUserIdRoute = AdminUsersUserIdRouteImport.update({
   id: '/users/$userId',
   path: '/users/$userId',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminTeamsTeamIdRoute = AdminTeamsTeamIdRouteImport.update({
+  id: '/teams/$teamId',
+  path: '/teams/$teamId',
   getParentRoute: () => AdminRouteRoute,
 } as any)
 const AdminPlansCreateRoute = AdminPlansCreateRouteImport.update({
@@ -248,6 +260,7 @@ export interface FileRoutesByFullPath {
   '/settings/team': typeof AppSettingsTeamRouteWithChildren
   '/admin/plans/$planId': typeof AdminPlansPlanIdRoute
   '/admin/plans/create': typeof AdminPlansCreateRoute
+  '/admin/teams/$teamId': typeof AdminTeamsTeamIdRoute
   '/admin/users/$userId': typeof AdminUsersUserIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/webhooks/polar': typeof ApiWebhooksPolarRoute
@@ -255,6 +268,7 @@ export interface FileRoutesByFullPath {
   '/billing/': typeof AppBillingIndexRoute
   '/settings/': typeof AppSettingsIndexRoute
   '/admin/plans/': typeof AdminPlansIndexRoute
+  '/admin/teams/': typeof AdminTeamsIndexRoute
   '/admin/users/': typeof AdminUsersIndexRoute
   '/settings/team/members': typeof AppSettingsTeamMembersRoute
   '/settings/team/': typeof AppSettingsTeamIndexRoute
@@ -279,6 +293,7 @@ export interface FileRoutesByTo {
   '/settings/security': typeof AppSettingsSecurityRoute
   '/admin/plans/$planId': typeof AdminPlansPlanIdRoute
   '/admin/plans/create': typeof AdminPlansCreateRoute
+  '/admin/teams/$teamId': typeof AdminTeamsTeamIdRoute
   '/admin/users/$userId': typeof AdminUsersUserIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/webhooks/polar': typeof ApiWebhooksPolarRoute
@@ -286,6 +301,7 @@ export interface FileRoutesByTo {
   '/billing': typeof AppBillingIndexRoute
   '/settings': typeof AppSettingsIndexRoute
   '/admin/plans': typeof AdminPlansIndexRoute
+  '/admin/teams': typeof AdminTeamsIndexRoute
   '/admin/users': typeof AdminUsersIndexRoute
   '/settings/team/members': typeof AppSettingsTeamMembersRoute
   '/settings/team': typeof AppSettingsTeamIndexRoute
@@ -318,6 +334,7 @@ export interface FileRoutesById {
   '/_app/settings/team': typeof AppSettingsTeamRouteWithChildren
   '/admin/plans/$planId': typeof AdminPlansPlanIdRoute
   '/admin/plans/create': typeof AdminPlansCreateRoute
+  '/admin/teams/$teamId': typeof AdminTeamsTeamIdRoute
   '/admin/users/$userId': typeof AdminUsersUserIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/webhooks/polar': typeof ApiWebhooksPolarRoute
@@ -325,6 +342,7 @@ export interface FileRoutesById {
   '/_app/billing/': typeof AppBillingIndexRoute
   '/_app/settings/': typeof AppSettingsIndexRoute
   '/admin/plans/': typeof AdminPlansIndexRoute
+  '/admin/teams/': typeof AdminTeamsIndexRoute
   '/admin/users/': typeof AdminUsersIndexRoute
   '/_app/settings/team/members': typeof AppSettingsTeamMembersRoute
   '/_app/settings/team/': typeof AppSettingsTeamIndexRoute
@@ -355,6 +373,7 @@ export interface FileRouteTypes {
     | '/settings/team'
     | '/admin/plans/$planId'
     | '/admin/plans/create'
+    | '/admin/teams/$teamId'
     | '/admin/users/$userId'
     | '/api/auth/$'
     | '/api/webhooks/polar'
@@ -362,6 +381,7 @@ export interface FileRouteTypes {
     | '/billing/'
     | '/settings/'
     | '/admin/plans/'
+    | '/admin/teams/'
     | '/admin/users/'
     | '/settings/team/members'
     | '/settings/team/'
@@ -386,6 +406,7 @@ export interface FileRouteTypes {
     | '/settings/security'
     | '/admin/plans/$planId'
     | '/admin/plans/create'
+    | '/admin/teams/$teamId'
     | '/admin/users/$userId'
     | '/api/auth/$'
     | '/api/webhooks/polar'
@@ -393,6 +414,7 @@ export interface FileRouteTypes {
     | '/billing'
     | '/settings'
     | '/admin/plans'
+    | '/admin/teams'
     | '/admin/users'
     | '/settings/team/members'
     | '/settings/team'
@@ -424,6 +446,7 @@ export interface FileRouteTypes {
     | '/_app/settings/team'
     | '/admin/plans/$planId'
     | '/admin/plans/create'
+    | '/admin/teams/$teamId'
     | '/admin/users/$userId'
     | '/api/auth/$'
     | '/api/webhooks/polar'
@@ -431,6 +454,7 @@ export interface FileRouteTypes {
     | '/_app/billing/'
     | '/_app/settings/'
     | '/admin/plans/'
+    | '/admin/teams/'
     | '/admin/users/'
     | '/_app/settings/team/members'
     | '/_app/settings/team/'
@@ -582,6 +606,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminUsersIndexRouteImport
       parentRoute: typeof AdminRouteRoute
     }
+    '/admin/teams/': {
+      id: '/admin/teams/'
+      path: '/teams'
+      fullPath: '/admin/teams/'
+      preLoaderRoute: typeof AdminTeamsIndexRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
     '/admin/plans/': {
       id: '/admin/plans/'
       path: '/plans'
@@ -629,6 +660,13 @@ declare module '@tanstack/react-router' {
       path: '/users/$userId'
       fullPath: '/admin/users/$userId'
       preLoaderRoute: typeof AdminUsersUserIdRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/teams/$teamId': {
+      id: '/admin/teams/$teamId'
+      path: '/teams/$teamId'
+      fullPath: '/admin/teams/$teamId'
+      preLoaderRoute: typeof AdminTeamsTeamIdRouteImport
       parentRoute: typeof AdminRouteRoute
     }
     '/admin/plans/create': {
@@ -810,8 +848,10 @@ interface AdminRouteRouteChildren {
   AdminIndexRoute: typeof AdminIndexRoute
   AdminPlansPlanIdRoute: typeof AdminPlansPlanIdRoute
   AdminPlansCreateRoute: typeof AdminPlansCreateRoute
+  AdminTeamsTeamIdRoute: typeof AdminTeamsTeamIdRoute
   AdminUsersUserIdRoute: typeof AdminUsersUserIdRoute
   AdminPlansIndexRoute: typeof AdminPlansIndexRoute
+  AdminTeamsIndexRoute: typeof AdminTeamsIndexRoute
   AdminUsersIndexRoute: typeof AdminUsersIndexRoute
 }
 
@@ -821,8 +861,10 @@ const AdminRouteRouteChildren: AdminRouteRouteChildren = {
   AdminIndexRoute: AdminIndexRoute,
   AdminPlansPlanIdRoute: AdminPlansPlanIdRoute,
   AdminPlansCreateRoute: AdminPlansCreateRoute,
+  AdminTeamsTeamIdRoute: AdminTeamsTeamIdRoute,
   AdminUsersUserIdRoute: AdminUsersUserIdRoute,
   AdminPlansIndexRoute: AdminPlansIndexRoute,
+  AdminTeamsIndexRoute: AdminTeamsIndexRoute,
   AdminUsersIndexRoute: AdminUsersIndexRoute,
 }
 

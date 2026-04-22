@@ -1,7 +1,9 @@
 import { createFileRoute, Link, notFound } from '@tanstack/react-router';
+import { pageTitle } from '@/lib/utils';
 import { adminUserQuery } from '@/queries/admin/users.queries';
 import { Button } from '@/components/selia/button';
 import { UserProfile } from '@/components/admin/user-profile';
+import { UserTeams } from '@/components/admin/user-teams';
 import { UserSubscription } from '@/components/admin/user-subscription';
 import { UserAccounts } from '@/components/admin/user-accounts';
 import { UserActions } from '@/components/admin/user-actions';
@@ -10,6 +12,9 @@ import { ArrowLeftIcon } from 'lucide-react';
 import { Heading } from '@/components/selia/heading';
 
 export const Route = createFileRoute('/admin/users/$userId')({
+  head: () => ({
+    meta: [{ title: pageTitle('User Details') }],
+  }),
   loader: async ({ context, params }) => {
     const user = await context.queryClient.ensureQueryData(
       adminUserQuery(params.userId),
@@ -36,6 +41,7 @@ function RouteComponent() {
         </div>
       </PageHeader>
       <UserProfile />
+      <UserTeams />
       <UserSubscription />
       <UserAccounts />
       <UserActions />

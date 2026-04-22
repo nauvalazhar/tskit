@@ -74,6 +74,28 @@ const baseColumns = [
       </Link>
     ),
   }),
+  columnHelper.display({
+    id: 'teams',
+    header: 'Teams',
+    cell: ({ row }) => {
+      const memberList = (row.original as Record<string, unknown>).members as
+        | { organizations: { name: string } }[]
+        | undefined;
+      if (!memberList?.length) return <span className="text-muted">—</span>;
+      return (
+        <div className="flex flex-wrap gap-1">
+          {memberList.slice(0, 2).map((m, i) => (
+            <Badge key={i} variant="secondary">
+              {m.organizations.name}
+            </Badge>
+          ))}
+          {memberList.length > 2 && (
+            <Badge variant="secondary">+{memberList.length - 2}</Badge>
+          )}
+        </div>
+      );
+    },
+  }),
   columnHelper.accessor('role', {
     header: 'Role',
     cell: ({ getValue }) => (

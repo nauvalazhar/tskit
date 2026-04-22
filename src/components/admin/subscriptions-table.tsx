@@ -72,14 +72,19 @@ const columnHelper = createColumnHelper<Subscription>();
 
 const baseColumns = [
   columnHelper.display({
-    id: 'user',
-    header: 'User',
-    cell: ({ row }) => (
-      <div className="min-w-0">
-        <p className="font-medium truncate">{row.original.user.name}</p>
-        <p className="text-muted truncate">{row.original.user.email}</p>
-      </div>
-    ),
+    id: 'team',
+    header: 'Team',
+    cell: ({ row }) => {
+      const org = (row.original as Record<string, unknown>).organization as
+        | { name: string; slug: string }
+        | undefined;
+      return (
+        <div className="min-w-0">
+          <p className="font-medium truncate">{org?.name ?? '—'}</p>
+          <p className="text-muted truncate">{org?.slug}</p>
+        </div>
+      );
+    },
   }),
   columnHelper.display({
     id: 'plan',
@@ -187,7 +192,7 @@ export function SubscriptionsTable() {
               </InputGroupAddon>
               <Input
                 key={search}
-                placeholder="Search by user name or email..."
+                placeholder="Search by team name, user name or email..."
                 defaultValue={search}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
@@ -308,9 +313,8 @@ export function SubscriptionsTable() {
             </AlertDialogHeader>
             <AlertDialogBody>
               <AlertDialogDescription>
-                Are you sure you want to cancel the subscription for{' '}
-                <strong>{cancelTarget?.user.name}</strong>? They will retain
-                access until the end of their billing period.
+                Are you sure you want to cancel this subscription? The team
+                will retain access until the end of their billing period.
               </AlertDialogDescription>
             </AlertDialogBody>
             <AlertDialogFooter>
