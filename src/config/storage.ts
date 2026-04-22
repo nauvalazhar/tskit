@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { storageDriverConfigSchema } from '@/core/drivers/storage/types';
+import { defineConfig } from '@/config/define-config';
 
 const storageChannelsSchema = z.object({
   public: storageDriverConfigSchema,
@@ -11,7 +12,7 @@ const storageConfigSchema = z.object({
   channels: storageChannelsSchema,
 });
 
-export const storageConfig = storageConfigSchema.parse({
+export const storageConfig = defineConfig(storageConfigSchema, {
   default: 'public',
   channels: {
     public: {

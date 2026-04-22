@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { mailDriverConfigSchema } from '@/core/drivers/email/types';
+import { defineConfig } from '@/config/define-config';
 
 const mailChannelsSchema = z.object({
   resend: mailDriverConfigSchema,
@@ -11,7 +12,7 @@ const mailConfigSchema = z.object({
   channels: mailChannelsSchema,
 });
 
-export const mailConfig = mailConfigSchema.parse({
+export const mailConfig = defineConfig(mailConfigSchema, {
   default: process.env.EMAIL_PROVIDER || 'resend',
   channels: {
     resend: {

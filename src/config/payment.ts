@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { paymentDriverConfigSchema } from '@/core/drivers/payment/types';
+import { defineConfig } from '@/config/define-config';
 
 const paymentChannelsSchema = z.object({
   stripe: paymentDriverConfigSchema,
@@ -11,7 +12,7 @@ const paymentConfigSchema = z.object({
   channels: paymentChannelsSchema,
 });
 
-export const paymentConfig = paymentConfigSchema.parse({
+export const paymentConfig = defineConfig(paymentConfigSchema, {
   default: process.env.PAYMENT_PROVIDER || 'stripe',
   channels: {
     stripe: {
