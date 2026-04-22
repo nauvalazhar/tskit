@@ -6,7 +6,7 @@
     "dev": "vite dev --port 3000",
     "build": "vite build",
     "ui": "bunx --bun selia@latest",
-    "auth:generate": "bunx auth generate --config src/lib/auth/auth.ts --output src/lib/database/schemas/auth.ts",
+    "auth:generate": "bunx @better-auth/cli generate --config src/lib/auth.ts --output src/database/schemas/auth.ts",
     "db:generate": "bunx drizzle-kit generate",
     "db:migrate": "bunx drizzle-kit migrate",
     "db:seed": "tsx src/database/seed.ts",
