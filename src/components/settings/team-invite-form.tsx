@@ -26,12 +26,10 @@ import {
 import { Form } from '@/components/selia/form';
 import { toastManager } from '@/components/selia/toast';
 import { inviteMember } from '@/functions/team';
+import { TEAM_ROLES, type TeamRole } from '@/lib/constants';
 import { PlusIcon } from 'lucide-react';
 
-const ROLE_OPTIONS: SelectItemType[] = [
-  { value: 'member', label: 'Member' },
-  { value: 'admin', label: 'Admin' },
-];
+const ROLE_OPTIONS: SelectItemType[] = [...TEAM_ROLES];
 
 export function TeamInviteForm() {
   const [open, setOpen] = useState(false);
@@ -40,10 +38,7 @@ export function TeamInviteForm() {
   const router = useRouter();
 
   const form = useForm({
-    defaultValues: {
-      email: '',
-      role: ROLE_OPTIONS[0] as SelectItemType,
-    },
+    defaultValues: { email: '', role: 'member' as TeamRole },
     onSubmit: async ({ value }) => {
       setError(null);
       setPending(true);
@@ -52,7 +47,7 @@ export function TeamInviteForm() {
         await inviteMember({
           data: {
             email: value.email,
-            role: value.role.value as 'admin' | 'member',
+            role: value.role,
           },
         });
         await router.invalidate();
@@ -126,9 +121,9 @@ export function TeamInviteForm() {
                 <Field>
                   <FieldLabel>Role</FieldLabel>
                   <Select
-                    value={field.state.value}
+                    value={ROLE_OPTIONS.find((o) => o.value === field.state.value)}
                     onValueChange={(v) =>
-                      field.handleChange(v as SelectItemType)
+                      field.handleChange((v as SelectItemType).value as TeamRole)
                     }
                   >
                     <SelectTrigger>

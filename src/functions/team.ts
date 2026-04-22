@@ -1,10 +1,10 @@
 import { createServerFn } from '@tanstack/react-start';
 import { getRequestHeaders } from '@tanstack/react-start/server';
 import { z } from 'zod';
-import { eq, and } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { auth } from '@/lib/auth';
 import { db } from '@/database';
-import { users } from '@/database/schemas/auth';
+import { users, members } from '@/database/schemas/auth';
 import { userSettings } from '@/database/schemas/settings';
 import { authMiddleware } from '@/middleware/auth';
 import { createRateLimitMiddleware } from '@/middleware/rate-limit';
@@ -230,10 +230,7 @@ export const getTeamMembers = createServerFn()
       headers,
       query: { organizationId: data?.organizationId },
     });
-    const response = result as
-      | { members: Record<string, unknown>[]; total: number }
-      | Record<string, unknown>[];
-    return Array.isArray(response) ? response : response.members;
+    return result.members;
   });
 
 export const getTeamInvitations = createServerFn()
@@ -243,11 +240,10 @@ export const getTeamInvitations = createServerFn()
   )
   .handler(async ({ data }) => {
     const headers = await getRequestHeaders();
-    const result = await auth.api.listInvitations({
+    return auth.api.listInvitations({
       headers,
       query: { organizationId: data?.organizationId },
     });
-    return Array.isArray(result) ? result : [];
   });
 
 export const acceptInvitation = createServerFn({ method: 'POST' })
@@ -324,7 +320,32 @@ export const leaveTeam = createServerFn({ method: 'POST' })
       throw new Error('You cannot leave your only team');
     }
 
+    // Switch to another team before leaving
+    const otherTeam = memberships.find(
+      (m) => m.organizationId !== data.organizationId,
+    );
+
     const headers = await getRequestHeaders();
+
+    if (otherTeam) {
+      await auth.api.setActiveOrganization({
+        body: { organizationId: otherTeam.organizationId },
+        headers,
+      });
+
+      await db
+        .insert(userSettings)
+        .values({
+          userId: context.user.id,
+          key: 'lastActiveOrganizationId',
+          value: otherTeam.organizationId,
+        })
+        .onConflictDoUpdate({
+          target: [userSettings.userId, userSettings.key],
+          set: { value: otherTeam.organizationId },
+        });
+    }
+
     await auth.api.leaveOrganization({
       body: { organizationId: data.organizationId },
       headers,

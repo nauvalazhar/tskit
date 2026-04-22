@@ -37,3 +37,10 @@ export const SUBSCRIPTION_STATUS_KEYS = Object.keys(
   subscriptionStatuses,
 ) as SubscriptionStatus[];
 
+export const TEAM_ROLES = [
+  { value: 'member', label: 'Member' },
+  { value: 'admin', label: 'Admin' },
+] as const;
+
+export type TeamRole = (typeof TEAM_ROLES)[number]['value'];
+

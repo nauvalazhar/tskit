@@ -3,8 +3,15 @@ import { Badge } from '@/components/selia/badge';
 import { Button } from '@/components/selia/button';
 import { toastManager } from '@/components/selia/toast';
 import { revokeInvitation } from '@/functions/team';
-import type { TeamInvitation } from '@/validations/team';
 import { XIcon } from 'lucide-react';
+
+interface TeamInvitation {
+  id: string;
+  email: string;
+  role: string | null;
+  status: string;
+  expiresAt: string | Date;
+}
 
 export function TeamInvitationsList({
   invitations,

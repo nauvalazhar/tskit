@@ -116,7 +116,7 @@ const options = {
   user: {
     deleteUser: {
       enabled: true,
-      beforeDelete: async (user, request) => {
+      beforeDelete: async (user) => {
         // Delete any orgs where this user is the sole member
         const userMembers = await db.query.members.findMany({
           where: eq(members.userId, user.id),
@@ -174,11 +174,6 @@ const options = {
         } catch (err) {
           console.error('[sendInvitationEmail] failed:', err);
         }
-      },
-      organizationHooks: {
-        afterCreateOrganization: async ({ organization, member, user }) => {
-          // no-op — hook available for future use
-        },
       },
     }),
   ],

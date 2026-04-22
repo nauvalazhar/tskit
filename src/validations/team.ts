@@ -6,10 +6,7 @@ export const createTeamSchema = z.object({
     .string()
     .min(1)
     .max(100)
-    .regex(
-      /^[a-z0-9-]+$/,
-      'Slug must be lowercase alphanumeric with hyphens',
-    ),
+    .regex(/^[a-z0-9-]+$/, 'Slug must be lowercase alphanumeric with hyphens'),
 });
 
 export const updateTeamSchema = z.object({
@@ -20,11 +17,11 @@ export const updateTeamSchema = z.object({
     .max(100)
     .regex(/^[a-z0-9-]+$/)
     .optional(),
-  logo: z.string().url().optional(),
+  logo: z.url().optional(),
 });
 
 export const inviteMemberSchema = z.object({
-  email: z.string().email(),
+  email: z.email(),
   role: z.enum(['admin', 'member']),
 });
 
@@ -48,30 +45,3 @@ export const setActiveTeamSchema = z.object({
 export const deleteTeamSchema = z.object({
   organizationId: z.string().min(1),
 });
-
-// Shared types for components
-
-export interface TeamMember {
-  id: string;
-  userId: string;
-  organizationId: string;
-  role: string;
-  createdAt: string;
-  user: {
-    id: string;
-    name: string;
-    email: string;
-    image: string | null;
-  };
-}
-
-export interface TeamInvitation {
-  id: string;
-  email: string;
-  role: string | null;
-  status: string;
-  expiresAt: string;
-  organizationId: string;
-  inviterId: string;
-  createdAt: string;
-}

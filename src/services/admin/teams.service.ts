@@ -1,6 +1,6 @@
 import { eq, ilike, or, count, desc, inArray } from 'drizzle-orm';
 import { db } from '@/database';
-import { organizations, members } from '@/database/schemas/auth';
+import { organizations } from '@/database/schemas/auth';
 import { subscriptions } from '@/database/schemas/billing';
 
 export async function listTeamsAdmin({

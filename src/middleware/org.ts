@@ -5,7 +5,7 @@ import { auth } from '@/lib/auth';
 
 export const orgMiddleware = createMiddleware({ type: 'function' })
   .middleware([authMiddleware])
-  .server(async ({ next, context }) => {
+  .server(async ({ next }) => {
     const headers = await getRequestHeaders();
     const activeOrg = await auth.api.getFullOrganization({ headers });
 

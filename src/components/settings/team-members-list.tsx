@@ -1,4 +1,5 @@
 import { useRouter } from '@tanstack/react-router';
+import { useQueryClient } from '@tanstack/react-query';
 import { Badge } from '@/components/selia/badge';
 import { Button } from '@/components/selia/button';
 import {
@@ -11,8 +12,18 @@ import {
 import { UserAvatar } from '@/components/shared/user-avatar';
 import { toastManager } from '@/components/selia/toast';
 import { removeMember, updateMemberRole, leaveTeam } from '@/functions/team';
-import type { TeamMember } from '@/validations/team';
 import { EllipsisIcon } from 'lucide-react';
+
+interface TeamMember {
+  id: string;
+  userId: string;
+  role: string;
+  user: {
+    name: string;
+    email: string;
+    image?: string | null;
+  };
+}
 
 const ROLE_LABELS: Record<string, string> = {
   owner: 'Owner',
@@ -38,17 +49,20 @@ export function TeamMembersList({
   organizationId: string;
 }) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const canManage = currentUserRole === 'owner' || currentUserRole === 'admin';
   const isOwner = currentUserRole === 'owner';
 
   const handleLeave = async () => {
     try {
       await leaveTeam({ data: { organizationId } });
+      queryClient.invalidateQueries({ queryKey: ['teams'] });
       toastManager.add({
         title: 'Left team',
         type: 'success',
       });
-      window.location.href = '/dashboard';
+      await router.invalidate();
+      router.navigate({ to: '/dashboard' });
     } catch (err) {
       toastManager.add({
         title: 'Error',

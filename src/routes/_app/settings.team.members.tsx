@@ -6,7 +6,6 @@ import { pageTitle } from '@/lib/utils';
 import { TeamMembersList } from '@/components/settings/team-members-list';
 import { TeamInviteForm } from '@/components/settings/team-invite-form';
 import { TeamInvitationsList } from '@/components/settings/team-invitations-list';
-import type { TeamMember, TeamInvitation } from '@/validations/team';
 import {
   getActiveOrganization,
   getActiveMemberRole,
@@ -23,14 +22,15 @@ export const Route = createFileRoute('/_app/settings/team/members')({
       getActiveOrganization(),
       getActiveMemberRole(),
     ]);
-    if (!activeOrg)
+    if (!activeOrg) {
       return {
-        activeOrg: null,
-        members: [] as TeamMember[],
-        invitations: [] as TeamInvitation[],
+        activeOrg: null as typeof activeOrg,
+        members: [],
+        invitations: [],
         currentUserId: '',
         currentUserRole: 'member',
       };
+    }
 
     const [members, invitations] = await Promise.all([
       getTeamMembers({ data: { organizationId: activeOrg.id } }),
@@ -39,8 +39,8 @@ export const Route = createFileRoute('/_app/settings/team/members')({
 
     return {
       activeOrg,
-      members: members as TeamMember[],
-      invitations: invitations as TeamInvitation[],
+      members,
+      invitations,
       currentUserId: context.session?.user?.id ?? '',
       currentUserRole: role ?? 'member',
     };
