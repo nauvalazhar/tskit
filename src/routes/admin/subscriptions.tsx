@@ -1,5 +1,6 @@
 import { Suspense } from 'react';
 import { createFileRoute } from '@tanstack/react-router';
+import { pageTitle } from '@/lib/utils';
 import { subscriptionsSearchSchema } from '@/validations/admin';
 import { adminSubscriptionsQuery } from '@/queries/admin/subscriptions.queries';
 import { SubscriptionsTable } from '@/components/admin/subscriptions-table';
@@ -7,6 +8,9 @@ import { PageHeader } from '@/components/shared/page-header';
 import { Heading } from '@/components/selia/heading';
 
 export const Route = createFileRoute('/admin/subscriptions')({
+  head: () => ({
+    meta: [{ title: pageTitle('Subscriptions') }],
+  }),
   validateSearch: subscriptionsSearchSchema,
   loaderDeps: ({ search }) => search,
   loader: ({ context, deps }) =>

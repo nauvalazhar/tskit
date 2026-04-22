@@ -14,11 +14,15 @@ import { Text, TextLink } from '@/components/selia/text';
 import { Form } from '@/components/selia/form';
 import { createFileRoute } from '@tanstack/react-router';
 import { Link, useRouter } from '@tanstack/react-router';
+import { pageTitle } from '@/lib/utils';
 import { authClient } from '@/lib/auth-client';
 import { Alert } from '@/components/selia/alert';
 import { CircleAlert } from 'lucide-react';
 
 export const Route = createFileRoute('/_auth/verify-2fa')({
+  head: () => ({
+    meta: [{ title: pageTitle('Verify 2FA') }],
+  }),
   component: RouteComponent,
 });
 

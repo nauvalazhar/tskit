@@ -3,6 +3,7 @@ import { Heading } from '@/components/selia/heading';
 import { Text } from '@/components/selia/text';
 import { Divider } from '@/components/selia/divider';
 import { createFileRoute } from '@tanstack/react-router';
+import { pageTitle } from '@/lib/utils';
 import { ChangePasswordForm } from '@/components/settings/change-password-form';
 import { SetPasswordForm } from '@/components/settings/set-password-form';
 import { EnableTwoFactorForm } from '@/components/settings/enable-two-factor-form';
@@ -11,6 +12,9 @@ import { listUserAccounts, listSessions } from '@/functions/auth';
 import { SessionsList } from '@/components/settings/sessions-list';
 
 export const Route = createFileRoute('/_app/settings/security')({
+  head: () => ({
+    meta: [{ title: pageTitle('Security') }],
+  }),
   loader: async ({ context }) => {
     const user = context.session?.user || null;
     const currentSessionId = context.session?.session?.id || '';

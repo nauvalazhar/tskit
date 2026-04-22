@@ -1,5 +1,6 @@
 import { ResetPasswordForm } from '@/components/auth/reset-password-form';
 import { createFileRoute } from '@tanstack/react-router';
+import { pageTitle } from '@/lib/utils';
 import { z } from 'zod';
 
 const searchSchema = z.object({
@@ -8,6 +9,9 @@ const searchSchema = z.object({
 
 export const Route = createFileRoute('/_auth/reset-password')({
   validateSearch: searchSchema,
+  head: () => ({
+    meta: [{ title: pageTitle('Reset Password') }],
+  }),
   component: RouteComponent,
 });
 

@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
+import { pageTitle } from '@/lib/utils';
 import { adminPlansQuery } from '@/queries/admin/plans.queries';
 import { plansSearchSchema } from '@/validations/admin';
 import { PlansTable } from '@/components/admin/plans-table';
@@ -9,6 +10,9 @@ import { Heading } from '@/components/selia/heading';
 import { Suspense } from 'react';
 
 export const Route = createFileRoute('/admin/plans/')({
+  head: () => ({
+    meta: [{ title: pageTitle('Plans') }],
+  }),
   validateSearch: plansSearchSchema,
   loaderDeps: ({ search }) => search,
   loader: async ({ context, deps }) => {

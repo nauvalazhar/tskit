@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { createFileRoute, Link, redirect } from '@tanstack/react-router';
+import { pageTitle } from '@/lib/utils';
 import { useQuery } from '@tanstack/react-query';
 import { billingSubscriptionPollingQuery } from '@/queries/billing.queries';
 import { Card, CardBody } from '@/components/selia/card';
@@ -13,6 +14,9 @@ const searchSchema = z.object({
 
 export const Route = createFileRoute('/_app/billing/success')({
   validateSearch: searchSchema,
+  head: () => ({
+    meta: [{ title: pageTitle('Checkout Success') }],
+  }),
   beforeLoad: ({ search }) => {
     if (!search.session_id) {
       throw redirect({ to: '/billing' });

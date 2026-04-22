@@ -10,6 +10,7 @@ import {
 } from '@/components/selia/item';
 import { PageHeader } from '@/components/shared/page-header';
 import { createFileRoute, Link } from '@tanstack/react-router';
+import { pageTitle } from '@/lib/utils';
 import {
   UserIcon,
   ShieldIcon,
@@ -18,6 +19,9 @@ import {
 } from 'lucide-react';
 
 export const Route = createFileRoute('/_app/dashboard')({
+  head: () => ({
+    meta: [{ title: pageTitle('Dashboard') }],
+  }),
   loader: async ({ context }) => {
     return {
       user: context.session?.user || null,

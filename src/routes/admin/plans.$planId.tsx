@@ -1,4 +1,5 @@
 import { createFileRoute, Link, notFound } from '@tanstack/react-router';
+import { pageTitle } from '@/lib/utils';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import {
   adminPlansQuery,
@@ -10,6 +11,9 @@ import { Button } from '@/components/selia/button';
 import { ArrowLeftIcon } from 'lucide-react';
 
 export const Route = createFileRoute('/admin/plans/$planId')({
+  head: () => ({
+    meta: [{ title: pageTitle('Edit Plan') }],
+  }),
   loader: async ({ context, params }) => {
     const [plans] = await Promise.all([
       context.queryClient.ensureQueryData(adminPlansQuery()),

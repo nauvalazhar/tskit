@@ -2,10 +2,14 @@ import { Heading } from '@/components/selia/heading';
 import { Text } from '@/components/selia/text';
 import { Separator } from '@/components/selia/separator';
 import { createFileRoute } from '@tanstack/react-router';
+import { pageTitle } from '@/lib/utils';
 import { AvatarUpload } from '@/components/settings/avatar-upload';
 import { ProfileForm } from '@/components/settings/profile-form';
 
 export const Route = createFileRoute('/_app/settings/')({
+  head: () => ({
+    meta: [{ title: pageTitle('Profile') }],
+  }),
   loader: async ({ context }) => {
     return {
       user: context.session?.user || null,

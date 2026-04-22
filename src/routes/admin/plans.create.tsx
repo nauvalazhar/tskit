@@ -1,10 +1,14 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
+import { pageTitle } from '@/lib/utils';
 import { PlanForm } from '@/components/admin/plan-form';
 import { PageHeader } from '@/components/shared/page-header';
 import { Button } from '@/components/selia/button';
 import { ArrowLeftIcon } from 'lucide-react';
 
 export const Route = createFileRoute('/admin/plans/create')({
+  head: () => ({
+    meta: [{ title: pageTitle('Create Plan') }],
+  }),
   component: RouteComponent,
 });
 

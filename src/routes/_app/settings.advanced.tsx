@@ -16,11 +16,15 @@ import {
   AlertDialogClose,
 } from '@/components/selia/alert-dialog';
 import { createFileRoute, useRouter } from '@tanstack/react-router';
+import { pageTitle } from '@/lib/utils';
 import { authClient } from '@/lib/auth-client';
 import { toastManager } from '@/components/selia/toast';
 import { listUserAccounts } from '@/functions/auth';
 
 export const Route = createFileRoute('/_app/settings/advanced')({
+  head: () => ({
+    meta: [{ title: pageTitle('Advanced') }],
+  }),
   loader: async () => {
     const accounts = await listUserAccounts();
     const hasPassword =

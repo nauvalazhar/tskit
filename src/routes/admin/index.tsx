@@ -1,12 +1,16 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { adminOverviewQuery } from '@/queries/admin/overview.queries';
+import { pageTitle } from '@/lib/utils';
 import { OverviewStats } from '@/components/admin/overview-stats';
 import { RecentActivity } from '@/components/admin/recent-activity';
 import { PageHeader } from '@/components/shared/page-header';
 import { Heading } from '@/components/selia/heading';
 
 export const Route = createFileRoute('/admin/')({
+  head: () => ({
+    meta: [{ title: pageTitle('Admin Overview') }],
+  }),
   loader: async ({ context }) => {
     await context.queryClient.ensureQueryData(adminOverviewQuery());
   },

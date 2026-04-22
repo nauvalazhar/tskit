@@ -2,12 +2,16 @@ import { Heading } from '@/components/selia/heading';
 import { Text } from '@/components/selia/text';
 import { Divider } from '@/components/selia/divider';
 import { createFileRoute, Link } from '@tanstack/react-router';
+import { pageTitle } from '@/lib/utils';
 import { TeamGeneralForm } from '@/components/settings/team-general-form';
 import { TeamDelete } from '@/components/settings/team-delete';
 import { getTeams, getActiveOrganization, getActiveMemberRole } from '@/functions/team';
 import { Button } from '@/components/selia/button';
 
 export const Route = createFileRoute('/_app/settings/team/')({
+  head: () => ({
+    meta: [{ title: pageTitle('Team Settings') }],
+  }),
   loader: async () => {
     const [activeOrg, teams, role] = await Promise.all([
       getActiveOrganization(),

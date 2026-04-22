@@ -92,3 +92,8 @@ export function formatFileSize(bytes: number): string {
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)}KB`;
   return `${(bytes / (1024 * 1024)).toFixed(0)}MB`;
 }
+
+export function pageTitle(page?: string): string {
+  const app = import.meta.env.VITE_APP_NAME;
+  return page ? `${page} | ${app}` : app;
+}

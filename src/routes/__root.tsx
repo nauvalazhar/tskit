@@ -13,6 +13,7 @@ import { getSession } from '@/functions/auth';
 import { getActiveOrganization } from '@/functions/team';
 import { getUserSettings } from '@/functions/settings';
 import type { Theme } from '@/lib/theme';
+import { pageTitle } from '@/lib/utils';
 import { QueryClient } from '@tanstack/react-query';
 
 import appCss from '../styles.css?url';
@@ -40,7 +41,7 @@ export const Route = createRootRouteWithContext<{
         content: 'width=device-width, initial-scale=1',
       },
       {
-        title: import.meta.env.VITE_APP_NAME,
+        title: pageTitle(),
       },
     ],
     links: [

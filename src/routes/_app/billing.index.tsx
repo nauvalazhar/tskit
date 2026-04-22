@@ -3,12 +3,16 @@ import { Text } from '@/components/selia/text';
 import { PageHeader } from '@/components/shared/page-header';
 import { SubscriptionStatus } from '@/components/billing/subscription-status';
 import { createFileRoute } from '@tanstack/react-router';
+import { pageTitle } from '@/lib/utils';
 import { getSubscription } from '@/functions/billing';
 import { getActiveMemberRole } from '@/functions/team';
 import { Alert, AlertTitle, AlertDescription } from '@/components/selia/alert';
 import { InfoIcon } from 'lucide-react';
 
 export const Route = createFileRoute('/_app/billing/')({
+  head: () => ({
+    meta: [{ title: pageTitle('Billing') }],
+  }),
   loader: async () => {
     const role = await getActiveMemberRole();
     const canManage = role === 'owner' || role === 'admin';

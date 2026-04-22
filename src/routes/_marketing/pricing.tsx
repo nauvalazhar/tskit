@@ -20,10 +20,13 @@ import { Text } from '@/components/selia/text';
 import { CheckoutButton } from '@/components/billing/checkout-button';
 import { ChangePlanButton } from '@/components/billing/change-plan-button';
 import { getPlans, getSubscription } from '@/functions/billing';
-import { formatPrice, formatEntitlement } from '@/lib/utils';
+import { formatPrice, formatEntitlement, pageTitle } from '@/lib/utils';
 import { featureRegistry } from '@/config/features';
 
 export const Route = createFileRoute('/_marketing/pricing')({
+  head: () => ({
+    meta: [{ title: pageTitle('Pricing') }],
+  }),
   loader: async ({ context }) => {
     const isAuthenticated = !!context.session?.user;
     const [plans, subscription] = await Promise.all([

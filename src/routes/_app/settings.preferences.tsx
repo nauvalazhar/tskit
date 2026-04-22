@@ -4,12 +4,16 @@ import { Text } from '@/components/selia/text';
 import { RadioGroup, Radio, RadioGroupLabel } from '@/components/selia/radio';
 import { Label } from '@/components/selia/label';
 import { createFileRoute } from '@tanstack/react-router';
+import { pageTitle } from '@/lib/utils';
 import { useServerFn } from '@tanstack/react-start';
 import { SunIcon, MoonIcon, MonitorIcon } from 'lucide-react';
 import { type Theme, applyTheme } from '@/lib/theme';
 import { updateUserSetting } from '@/functions/settings';
 
 export const Route = createFileRoute('/_app/settings/preferences')({
+  head: () => ({
+    meta: [{ title: pageTitle('Preferences') }],
+  }),
   loader: ({ context }) => {
     return {
       theme: (context.settings?.theme as Theme) || 'auto',

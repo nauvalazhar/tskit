@@ -1,10 +1,14 @@
 import { Heading } from '@/components/selia/heading';
 import { Text } from '@/components/selia/text';
 import { createFileRoute } from '@tanstack/react-router';
+import { pageTitle } from '@/lib/utils';
 import { ActivityLog } from '@/components/settings/activity-log';
 import { userAuditLogsQuery } from '@/queries/audit.queries';
 
 export const Route = createFileRoute('/_app/settings/activity')({
+  head: () => ({
+    meta: [{ title: pageTitle('Activity') }],
+  }),
   loader: ({ context }) =>
     context.queryClient.ensureQueryData(userAuditLogsQuery()),
   component: RouteComponent,

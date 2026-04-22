@@ -1,5 +1,6 @@
 import { Suspense } from 'react';
 import { createFileRoute } from '@tanstack/react-router';
+import { pageTitle } from '@/lib/utils';
 import { adminAuditLogsQuery } from '@/queries/admin/audit.queries';
 import { AuditLogTable } from '@/components/admin/audit-log-table';
 import { PageHeader } from '@/components/shared/page-header';
@@ -8,6 +9,9 @@ import { auditSearchSchema } from '@/validations/audit';
 
 export const Route = createFileRoute('/admin/audit')({
   validateSearch: auditSearchSchema,
+  head: () => ({
+    meta: [{ title: pageTitle('Audit Log') }],
+  }),
   loaderDeps: ({ search }) => search,
   loader: ({ context, deps }) =>
     context.queryClient.ensureQueryData(
