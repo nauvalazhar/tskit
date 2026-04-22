@@ -1,10 +1,13 @@
 import { createServerFn } from '@tanstack/react-start';
 import { z } from 'zod';
 import { authMiddleware } from '@/middleware/auth';
+import { createRateLimitMiddleware } from '@/middleware/rate-limit';
 import { query as queryAuditLogs } from '@/services/audit.service';
 
+const defaultRateLimit = createRateLimitMiddleware('default');
+
 export const getUserAuditLogs = createServerFn()
-  .middleware([authMiddleware])
+  .middleware([defaultRateLimit, authMiddleware])
   .inputValidator(
     z.object({
       cursor: z.uuid().optional(),

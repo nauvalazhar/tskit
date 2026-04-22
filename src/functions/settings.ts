@@ -4,7 +4,10 @@ import { z } from 'zod';
 import { db } from '@/database';
 import { userSettings } from '@/database/schemas/settings';
 import { authMiddleware } from '@/middleware/auth';
+import { createRateLimitMiddleware } from '@/middleware/rate-limit';
 import { audit } from '@/lib/audit';
+
+const defaultRateLimit = createRateLimitMiddleware('default');
 
 export const getUserSettings = createServerFn()
   .middleware([authMiddleware])
@@ -25,7 +28,7 @@ export const getUserSettings = createServerFn()
   });
 
 export const updateUserSetting = createServerFn({ method: 'POST' })
-  .middleware([authMiddleware])
+  .middleware([defaultRateLimit, authMiddleware])
   .inputValidator(z.object({ key: z.string().min(1), value: z.string() }))
   .handler(async ({ data, context }) => {
     await db

@@ -1,7 +1,7 @@
 import { createServerFn } from '@tanstack/react-start';
 import { getRequestHeaders } from '@tanstack/react-start/server';
 import { z } from 'zod';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import { auth } from '@/lib/auth';
 import { db } from '@/database';
 import { users, members } from '@/database/schemas/auth';
@@ -119,6 +119,17 @@ export const setActiveTeam = createServerFn({ method: 'POST' })
   .middleware([authMiddleware])
   .inputValidator(setActiveTeamSchema)
   .handler(async ({ data, context }) => {
+    // Verify user is a member of the target organization
+    const membership = await db.query.members.findFirst({
+      where: and(
+        eq(members.userId, context.user.id),
+        eq(members.organizationId, data.organizationId),
+      ),
+    });
+    if (!membership) {
+      throw new Error('You are not a member of this organization');
+    }
+
     const headers = await getRequestHeaders();
     const result = await auth.api.setActiveOrganization({
       body: { organizationId: data.organizationId },
@@ -224,7 +235,20 @@ export const getTeamMembers = createServerFn()
   .inputValidator(
     z.object({ organizationId: z.string().optional() }).optional(),
   )
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
+    // If a specific org is requested, verify membership
+    if (data?.organizationId) {
+      const membership = await db.query.members.findFirst({
+        where: and(
+          eq(members.userId, context.user.id),
+          eq(members.organizationId, data.organizationId),
+        ),
+      });
+      if (!membership) {
+        throw new Error('You are not a member of this organization');
+      }
+    }
+
     const headers = await getRequestHeaders();
     const result = await auth.api.listMembers({
       headers,
@@ -238,7 +262,20 @@ export const getTeamInvitations = createServerFn()
   .inputValidator(
     z.object({ organizationId: z.string().optional() }).optional(),
   )
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
+    // If a specific org is requested, verify membership
+    if (data?.organizationId) {
+      const membership = await db.query.members.findFirst({
+        where: and(
+          eq(members.userId, context.user.id),
+          eq(members.organizationId, data.organizationId),
+        ),
+      });
+      if (!membership) {
+        throw new Error('You are not a member of this organization');
+      }
+    }
+
     const headers = await getRequestHeaders();
     return auth.api.listInvitations({
       headers,

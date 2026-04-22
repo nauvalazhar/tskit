@@ -14,8 +14,11 @@ import { storage } from '@/lib/storage';
 import { customSession } from 'better-auth/plugins';
 import { subscriptions } from '@/database/schemas/billing';
 
+const appUrl = process.env.VITE_APP_URL || 'http://localhost:3000';
+
 const options = {
-  baseURL: process.env.VITE_APP_URL || 'http://localhost:3000',
+  baseURL: appUrl,
+  trustedOrigins: [appUrl],
   advanced: {
     database: {
       generateId: 'uuid',

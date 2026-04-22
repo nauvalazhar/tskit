@@ -77,7 +77,7 @@ export async function getUserAdmin(userId: string) {
       role: m.role,
     })),
     subscriptions: userSubscriptions,
-    accounts: userAccounts,
+    accounts: userAccounts.map(({ accessToken, refreshToken, idToken, password, ...safe }) => safe),
     sessionCount,
   };
 }
