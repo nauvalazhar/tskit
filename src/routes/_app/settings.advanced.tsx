@@ -3,7 +3,7 @@ import { Heading } from '@/components/selia/heading';
 import { Text } from '@/components/selia/text';
 import { Button } from '@/components/selia/button';
 import { Input } from '@/components/selia/input';
-import { Field, FieldError, FieldLabel } from '@/components/selia/field';
+import { Field, FieldLabel } from '@/components/selia/field';
 import {
   AlertDialog,
   AlertDialogTrigger,
