@@ -895,11 +895,11 @@ channels: {
   // ...existing
   videos: {
     driver: 's3',
-    bucket: process.env.R2_BUCKET_NAME!,
+    bucket: process.env.S3_BUCKET!,
     prefix: 'videos',           // auto-prepends to all keys
-    endpoint: `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+    endpoint: process.env.S3_ENDPOINT!,
     credentials: { ... },
-    publicUrl: process.env.R2_PUBLIC_URL,
+    publicUrl: process.env.S3_PUBLIC_URL,
   },
 }
 
@@ -1339,21 +1339,21 @@ export const storageConfig: StorageConfig = {
   channels: {
     public: {
       driver: 's3',
-      bucket: process.env.R2_BUCKET_NAME!,
-      endpoint: `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+      bucket: process.env.S3_BUCKET!,
+      endpoint: process.env.S3_ENDPOINT!,
       credentials: {
-        accessKeyId: process.env.R2_ACCESS_KEY_ID!,
-        secretAccessKey: process.env.R2_SECRET_ACCESS_KEY!,
+        accessKeyId: process.env.S3_ACCESS_KEY_ID!,
+        secretAccessKey: process.env.S3_SECRET_ACCESS_KEY!,
       },
-      publicUrl: process.env.R2_PUBLIC_URL,
+      publicUrl: process.env.S3_PUBLIC_URL,
     },
     private: {
       driver: 's3',
-      bucket: process.env.R2_PRIVATE_BUCKET_NAME || 'tskit-private',
-      endpoint: `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+      bucket: process.env.S3_PRIVATE_BUCKET || 'tskit-private',
+      endpoint: process.env.S3_ENDPOINT!,
       credentials: {
-        accessKeyId: process.env.R2_ACCESS_KEY_ID!,
-        secretAccessKey: process.env.R2_SECRET_ACCESS_KEY!,
+        accessKeyId: process.env.S3_ACCESS_KEY_ID!,
+        secretAccessKey: process.env.S3_SECRET_ACCESS_KEY!,
       },
     },
   },
