@@ -42,7 +42,7 @@ function RouteComponent() {
   };
 
   return (
-    <div className="grid grid-cols-2 gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
       <div>
         <Heading level={2} size="sm">
           Appearance

@@ -1,8 +1,16 @@
 import { useState } from 'react';
 import { useRouter } from '@tanstack/react-router';
 import { authClient } from '@/lib/auth-client';
-import { parseUserAgent, formatRelativeDate, formatFullDate } from '@/lib/utils';
-import { Tooltip, TooltipTrigger, TooltipPopup } from '@/components/selia/tooltip';
+import {
+  parseUserAgent,
+  formatRelativeDate,
+  formatFullDate,
+} from '@/lib/utils';
+import {
+  Tooltip,
+  TooltipTrigger,
+  TooltipPopup,
+} from '@/components/selia/tooltip';
 import { toastManager } from '@/components/selia/toast';
 import { Button } from '@/components/selia/button';
 import { Badge } from '@/components/selia/badge';
@@ -108,13 +116,17 @@ export function SessionsList({
                   )}
                 </ItemTitle>
                 <ItemDescription>
-                  {session.ipAddress || 'Unknown IP'}
+                  <span className="break-all">
+                    {session.ipAddress || 'Unknown IP'}
+                  </span>
                   {' · '}
                   <Tooltip>
                     <TooltipTrigger className="cursor-default underline decoration-dotted underline-offset-2">
                       {formatRelativeDate(session.createdAt)}
                     </TooltipTrigger>
-                    <TooltipPopup>{formatFullDate(session.createdAt)}</TooltipPopup>
+                    <TooltipPopup>
+                      {formatFullDate(session.createdAt)}
+                    </TooltipPopup>
                   </Tooltip>
                 </ItemDescription>
               </ItemContent>

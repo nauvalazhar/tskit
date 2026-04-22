@@ -8,6 +8,13 @@
       "when": 1776769967138,
       "tag": "0000_fearless_lifeguard",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1776862406872,
+      "tag": "0001_pink_wonder_man",
+      "breakpoints": true
     }
   ]
 }

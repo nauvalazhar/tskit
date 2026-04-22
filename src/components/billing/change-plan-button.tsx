@@ -3,15 +3,16 @@ import { useRouter } from '@tanstack/react-router';
 import { useServerFn } from '@tanstack/react-start';
 import { Button } from '@/components/selia/button';
 import {
-  AlertDialog,
-  AlertDialogPopup,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogBody,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogClose,
-} from '@/components/selia/alert-dialog';
+  Dialog,
+  DialogTrigger,
+  DialogPopup,
+  DialogHeader,
+  DialogTitle,
+  DialogBody,
+  DialogDescription,
+  DialogFooter,
+  DialogClose,
+} from '@/components/selia/dialog';
 import { toastManager } from '@/components/selia/toast';
 import { changePlan } from '@/functions/billing';
 import { formatPrice } from '@/lib/utils';
@@ -69,16 +70,20 @@ export function ChangePlanButton({
   };
 
   return (
-    <AlertDialog open={open} onOpenChange={setOpen}>
-      <Button variant={variant} block onClick={() => setOpen(true)}>
-        {label}
-      </Button>
-      <AlertDialogPopup>
-        <AlertDialogHeader>
-          <AlertDialogTitle>{label}</AlertDialogTitle>
-        </AlertDialogHeader>
-        <AlertDialogBody>
-          <AlertDialogDescription>
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger
+        render={
+          <Button variant={variant} block>
+            {label}
+          </Button>
+        }
+      />
+      <DialogPopup>
+        <DialogHeader>
+          <DialogTitle>{label}</DialogTitle>
+        </DialogHeader>
+        <DialogBody>
+          <DialogDescription>
             {direction === 'upgrade' ? (
               <>
                 You'll be upgraded to{' '}
@@ -108,10 +113,10 @@ export function ChangePlanButton({
                 period.
               </>
             )}
-          </AlertDialogDescription>
-        </AlertDialogBody>
-        <AlertDialogFooter>
-          <AlertDialogClose>Cancel</AlertDialogClose>
+          </DialogDescription>
+        </DialogBody>
+        <DialogFooter>
+          <DialogClose>Cancel</DialogClose>
           <Button
             variant={direction === 'upgrade' ? 'primary' : 'secondary'}
             onClick={handleConfirm}
@@ -119,8 +124,8 @@ export function ChangePlanButton({
           >
             {label}
           </Button>
-        </AlertDialogFooter>
-      </AlertDialogPopup>
-    </AlertDialog>
+        </DialogFooter>
+      </DialogPopup>
+    </Dialog>
   );
 }

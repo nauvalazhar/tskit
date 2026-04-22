@@ -1,4 +1,5 @@
 import { AdminSidebar } from '@/components/admin/admin-sidebar';
+import { SidebarLayout } from '@/components/app/sidebar-layout';
 import { createFileRoute, Outlet, redirect } from '@tanstack/react-router';
 
 export const Route = createFileRoute('/admin')({
@@ -16,13 +17,8 @@ export const Route = createFileRoute('/admin')({
 
 function RouteComponent() {
   return (
-    <div className="flex h-dvh dark:bg-[oklch(0.1809_0.0023_247.96)] bg-[oklch(0.977_0.0007_247.83)]">
-      <AdminSidebar />
-      <main className="flex-1 overflow-auto p-10 rounded-l-3xl ring ring-card-border/40 my-4 bg-background">
-        <div className="mx-auto max-w-6xl">
-          <Outlet />
-        </div>
-      </main>
-    </div>
+    <SidebarLayout sidebar={<AdminSidebar />} maxWidth="max-w-6xl">
+      <Outlet />
+    </SidebarLayout>
   );
 }

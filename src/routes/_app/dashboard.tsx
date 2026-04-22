@@ -41,7 +41,7 @@ function RouteComponent() {
           Here's an overview of your account.
         </Text>
       </PageHeader>
-      <div className="flex gap-3 *:flex-1">
+      <div className="flex flex-col sm:flex-row gap-3 *:flex-1">
         <Item render={<Link to="/settings" />}>
           <ItemMedia>
             <UserIcon />

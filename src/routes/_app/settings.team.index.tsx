@@ -39,7 +39,7 @@ function RouteComponent() {
 
   return (
     <div className="flex flex-col gap-10">
-      <div className="grid grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
           <Heading level={2} size="sm">
             General
@@ -62,7 +62,7 @@ function RouteComponent() {
         </div>
       </div>
       <Divider />
-      <div className="grid grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
           <Heading level={2} size="sm">
             Members
@@ -84,7 +84,7 @@ function RouteComponent() {
       {isOwner && (
         <>
           <Divider />
-          <div className="grid grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <Heading level={2} size="sm">
                 Delete Team

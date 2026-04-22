@@ -10,6 +10,7 @@ export const getUserAuditLogs = createServerFn()
   .middleware([defaultRateLimit, authMiddleware])
   .inputValidator(
     z.object({
+      action: z.string().optional(),
       cursor: z.uuid().optional(),
       limit: z.number().int().min(1).max(100).optional(),
     }),

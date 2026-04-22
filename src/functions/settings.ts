@@ -43,9 +43,12 @@ export const updateUserSetting = createServerFn({ method: 'POST' })
         set: { value: data.value },
       });
 
-    await audit.log({
-      actorId: context.user.id,
-      action: 'settings.profile.updated',
-      metadata: { key: data.key },
-    });
+    const SILENT_KEYS = ['sidebar'];
+    if (!SILENT_KEYS.includes(data.key)) {
+      await audit.log({
+        actorId: context.user.id,
+        action: 'settings.profile.updated',
+        metadata: { key: data.key },
+      });
+    }
   });

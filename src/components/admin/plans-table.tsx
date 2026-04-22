@@ -100,7 +100,7 @@ export function PlansTable() {
     <Card>
       <CardHeader>
         <div className="flex flex-col gap-2.5">
-          <InputGroup className="w-xs">
+          <InputGroup className="w-full sm:w-xs">
             <InputGroupAddon align="start">
               <SearchIcon />
             </InputGroupAddon>

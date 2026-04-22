@@ -1,12 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Mail } from 'lucide-react';
 import { authClient } from '@/lib/auth-client';
-import {
-  Alert,
-  AlertDescription,
-  AlertAction,
-  AlertTitle,
-} from '@/components/selia/alert';
 import { Button } from '@/components/selia/button';
 import { toastManager } from '@/components/selia/toast';
 
@@ -53,24 +46,20 @@ export function EmailVerificationBanner() {
   };
 
   return (
-    <Alert variant="warning" className="mb-6">
-      <Mail />
-      <AlertTitle>Verify Your Email</AlertTitle>
-      <AlertDescription>
-        Please verify your email address ({session.user.email}). Check your
-        inbox for the verification link.
-      </AlertDescription>
-      <AlertAction>
-        <Button
-          variant="outline"
-          size="sm"
-          progress={sending}
-          disabled={cooldown > 0}
-          onClick={handleResend}
-        >
-          {cooldown > 0 ? `Resend in ${cooldown}s` : 'Resend Email'}
-        </Button>
-      </AlertAction>
-    </Alert>
+    <div className="flex items-center justify-center bg-warning/15 text-warning py-1.5 gap-2">
+      <p className="font-semibold">
+        Please verify your email address ({session.user.email})
+      </p>
+      <Button
+        variant="plain"
+        size="xs"
+        progress={sending}
+        disabled={cooldown > 0}
+        onClick={handleResend}
+        className="text-warning hover:bg-warning/20!"
+      >
+        {cooldown > 0 ? `Resend in ${cooldown}s` : 'Resend Email'}
+      </Button>
+    </div>
   );
 }

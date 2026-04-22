@@ -39,7 +39,7 @@ function RouteComponent() {
 
   return (
     <div className="flex flex-col gap-10">
-      <div className="grid grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
           <Heading level={2} size="sm">
             Password
@@ -63,7 +63,7 @@ function RouteComponent() {
       {hasPassword && (
         <>
           <Divider />
-          <div className="grid grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <Heading level={2} size="sm">
                 Two-Factor Authentication
@@ -88,7 +88,7 @@ function RouteComponent() {
         </>
       )}
       <Divider />
-      <div className="grid grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
           <Heading level={2} size="sm">
             Active Sessions

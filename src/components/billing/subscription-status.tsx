@@ -31,7 +31,10 @@ interface SubscriptionStatusProps {
   canManage?: boolean;
 }
 
-export function SubscriptionStatus({ subscription, canManage = true }: SubscriptionStatusProps) {
+export function SubscriptionStatus({
+  subscription,
+  canManage = true,
+}: SubscriptionStatusProps) {
   if (!subscription) {
     return (
       <Card>
@@ -45,7 +48,11 @@ export function SubscriptionStatus({ subscription, canManage = true }: Subscript
         </CardHeader>
         {canManage && (
           <CardBody>
-            <Button variant="primary" render={<Link to="/pricing" />}>
+            <Button
+              nativeButton={false}
+              variant="primary"
+              render={<Link to="/pricing" />}
+            >
               View Plans
             </Button>
           </CardBody>
@@ -72,7 +79,7 @@ export function SubscriptionStatus({ subscription, canManage = true }: Subscript
 
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="border-none">
         <div className="flex items-center gap-2">
           <CardTitle>{subscription.plan.name}</CardTitle>
           <Badge variant={badge.variant}>{badge.label}</Badge>

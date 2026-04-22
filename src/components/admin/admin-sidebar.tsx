@@ -1,7 +1,6 @@
 import {
   Sidebar,
   SidebarContent,
-  SidebarFooter,
   SidebarGroup,
   SidebarHeader,
   SidebarItem,
@@ -11,7 +10,6 @@ import {
   SidebarMenu,
 } from '@/components/selia/sidebar';
 import {
-  ArrowLeftIcon,
   Building2Icon,
   CreditCardIcon,
   LayoutDashboardIcon,
@@ -23,7 +21,7 @@ import { Link } from '@tanstack/react-router';
 
 export function AdminSidebar() {
   return (
-    <Sidebar className="lg:w-64">
+    <Sidebar>
       <SidebarHeader>
         <SidebarLogo>
           <img
@@ -78,18 +76,6 @@ export function AdminSidebar() {
           </SidebarGroup>
         </SidebarMenu>
       </SidebarContent>
-      <SidebarFooter>
-        <SidebarMenu>
-          <SidebarList>
-            <SidebarItem>
-              <SidebarItemButton render={<Link to="/dashboard" />}>
-                <ArrowLeftIcon />
-                Back to App
-              </SidebarItemButton>
-            </SidebarItem>
-          </SidebarList>
-        </SidebarMenu>
-      </SidebarFooter>
     </Sidebar>
   );
 }

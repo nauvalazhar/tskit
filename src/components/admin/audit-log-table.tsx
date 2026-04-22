@@ -15,7 +15,6 @@ import {
   TableContainer,
 } from '@/components/selia/table';
 import { Badge } from '@/components/selia/badge';
-import { Button } from '@/components/selia/button';
 import {
   Select,
   SelectTrigger,
@@ -45,6 +44,12 @@ import {
   parseUserAgent,
 } from '@/lib/utils';
 import type { getAuditLogs } from '@/functions/admin/audit';
+import {
+  Pagination,
+  PaginationButton,
+  PaginationItem,
+  PaginationList,
+} from '@/components/selia/pagination';
 
 const routeApi = getRouteApi('/admin/audit');
 
@@ -168,6 +173,10 @@ export function AuditLogTable() {
   }
 
   function handlePrevPage() {
+    if (cursorStack.length === 0) {
+      navigate({ search: (p) => ({ ...p, cursor: undefined }) });
+      return;
+    }
     const prev = cursorStack[cursorStack.length - 1];
     setCursorStack((s) => s.slice(0, -1));
     navigate({
@@ -179,109 +188,115 @@ export function AuditLogTable() {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center gap-3">
-          <div className="w-48">
-            <Select
-              value={
-                DOMAIN_OPTIONS.find((o) => o.value === action) ??
-                DOMAIN_OPTIONS[0]
-              }
-              onValueChange={(v) => {
-                const option = v as (typeof DOMAIN_OPTIONS)[number];
-                setCursorStack([]);
-                navigate({
-                  search: {
-                    action: option.value || undefined,
-                    cursor: undefined,
-                  },
-                });
-              }}
-              items={DOMAIN_OPTIONS}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="All Actions" />
-              </SelectTrigger>
-              <SelectPopup>
-                <SelectList>
-                  {DOMAIN_OPTIONS.map((option) => (
-                    <SelectItem key={option.value} value={option}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectList>
-              </SelectPopup>
-            </Select>
+    <>
+      <Card>
+        <CardHeader>
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+            <div className="w-full sm:w-48">
+              <Select
+                value={
+                  DOMAIN_OPTIONS.find((o) => o.value === action) ??
+                  DOMAIN_OPTIONS[0]
+                }
+                onValueChange={(v) => {
+                  const option = v as (typeof DOMAIN_OPTIONS)[number];
+                  setCursorStack([]);
+                  navigate({
+                    search: {
+                      action: option.value || undefined,
+                      cursor: undefined,
+                    },
+                  });
+                }}
+                items={DOMAIN_OPTIONS}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="All Actions" />
+                </SelectTrigger>
+                <SelectPopup>
+                  <SelectList>
+                    {DOMAIN_OPTIONS.map((option) => (
+                      <SelectItem key={option.value} value={option}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectList>
+                </SelectPopup>
+              </Select>
+            </div>
           </div>
-        </div>
-      </CardHeader>
-      <CardBody>
-        <TableContainer>
-          <Table>
-            <TableHeader>
-              {table.getHeaderGroups().map((headerGroup) => (
-                <TableRow key={headerGroup.id}>
-                  {headerGroup.headers.map((header) => (
-                    <TableHead key={header.id}>
-                      {flexRender(
-                        header.column.columnDef.header,
-                        header.getContext(),
-                      )}
-                    </TableHead>
-                  ))}
-                </TableRow>
-              ))}
-            </TableHeader>
-            <TableBody>
-              {table.getRowModel().rows.length === 0 ? (
-                <TableRow>
-                  <TableCell
-                    colSpan={columns.length}
-                    className="text-center text-muted py-8"
-                  >
-                    No audit logs found.
-                  </TableCell>
-                </TableRow>
-              ) : (
-                table.getRowModel().rows.map((row) => (
-                  <TableRow key={row.id}>
-                    {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id}>
+        </CardHeader>
+        <CardBody>
+          <TableContainer>
+            <Table>
+              <TableHeader>
+                {table.getHeaderGroups().map((headerGroup) => (
+                  <TableRow key={headerGroup.id}>
+                    {headerGroup.headers.map((header) => (
+                      <TableHead key={header.id}>
                         {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext(),
+                          header.column.columnDef.header,
+                          header.getContext(),
                         )}
-                      </TableCell>
+                      </TableHead>
                     ))}
                   </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </TableContainer>
+                ))}
+              </TableHeader>
+              <TableBody>
+                {table.getRowModel().rows.length === 0 ? (
+                  <TableRow>
+                    <TableCell
+                      colSpan={columns.length}
+                      className="text-center text-muted py-8"
+                    >
+                      No audit logs found.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  table.getRowModel().rows.map((row) => (
+                    <TableRow key={row.id}>
+                      {row.getVisibleCells().map((cell) => (
+                        <TableCell key={cell.id}>
+                          {flexRender(
+                            cell.column.columnDef.cell,
+                            cell.getContext(),
+                          )}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </CardBody>
+      </Card>
 
-        {(cursorStack.length > 0 || nextCursor) && (
-          <div className="flex items-center justify-between pt-4">
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={cursorStack.length === 0}
-              onClick={handlePrevPage}
-            >
-              Previous
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={!nextCursor}
-              onClick={handleNextPage}
-            >
-              Next
-            </Button>
-          </div>
-        )}
-      </CardBody>
-    </Card>
+      {(cursor || cursorStack.length > 0 || nextCursor) && (
+        <div className="flex items-center justify-center mt-4 gap-2.5">
+          <Pagination>
+            <PaginationList>
+              <PaginationItem>
+                <PaginationButton
+                  disabled={!cursor}
+                  onClick={handlePrevPage}
+                >
+                  Previous
+                </PaginationButton>
+              </PaginationItem>
+              <PaginationItem>
+                <PaginationButton
+                  disabled={!nextCursor}
+                  onClick={handleNextPage}
+                >
+                  Next
+                </PaginationButton>
+              </PaginationItem>
+            </PaginationList>
+          </Pagination>
+        </div>
+      )}
+    </>
   );
 }

@@ -42,7 +42,10 @@ import {
 } from '@/components/selia/menu';
 import { getRouteApi } from '@tanstack/react-router';
 import { useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
-import { adminCancelSubscription, getSubscriptions } from '@/functions/admin/subscriptions';
+import {
+  adminCancelSubscription,
+  getSubscriptions,
+} from '@/functions/admin/subscriptions';
 import { adminSubscriptionsQuery } from '@/queries/admin/subscriptions.queries';
 import { ChangePlanDialog } from './change-plan-dialog';
 import { SUBSCRIPTION_STATUSES } from '@/lib/constants';
@@ -185,8 +188,8 @@ export function SubscriptionsTable() {
     <Card>
       <CardHeader>
         <div className="flex flex-col gap-2.5">
-          <div className="flex items-center gap-3">
-            <InputGroup className="w-xs">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+            <InputGroup className="w-full sm:w-xs">
               <InputGroupAddon align="start">
                 <SearchIcon />
               </InputGroupAddon>
@@ -204,36 +207,36 @@ export function SubscriptionsTable() {
                 }}
               />
             </InputGroup>
-            <div className="w-48">
+            <div className="w-full sm:w-48">
               <Select
-            value={statuses.find((s) => s.value === status) ?? statuses[0]}
-            onValueChange={(v) => {
-              const option = v as (typeof statuses)[number];
-              navigate({
-                search: {
-                  page: 1,
-                  search: search || undefined,
-                  status:
-                    option.value !== ''
-                      ? (option.value as SubscriptionStatus)
-                      : undefined,
-                },
-              });
-            }}
-            items={statuses}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select status" />
-            </SelectTrigger>
-            <SelectPopup>
-              <SelectList>
-                {statuses.map((status) => (
-                  <SelectItem key={status.value} value={status}>
-                    {status.label}
-                  </SelectItem>
-                ))}
-              </SelectList>
-            </SelectPopup>
+                value={statuses.find((s) => s.value === status) ?? statuses[0]}
+                onValueChange={(v) => {
+                  const option = v as (typeof statuses)[number];
+                  navigate({
+                    search: {
+                      page: 1,
+                      search: search || undefined,
+                      status:
+                        option.value !== ''
+                          ? (option.value as SubscriptionStatus)
+                          : undefined,
+                    },
+                  });
+                }}
+                items={statuses}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectPopup>
+                  <SelectList>
+                    {statuses.map((status) => (
+                      <SelectItem key={status.value} value={status}>
+                        {status.label}
+                      </SelectItem>
+                    ))}
+                  </SelectList>
+                </SelectPopup>
               </Select>
             </div>
           </div>
@@ -299,7 +302,9 @@ export function SubscriptionsTable() {
           page={page}
           totalPages={totalPages}
           onPageChange={(p) =>
-            navigate({ search: { page: p, search: search || undefined, status } })
+            navigate({
+              search: { page: p, search: search || undefined, status },
+            })
           }
         />
 
@@ -313,8 +318,8 @@ export function SubscriptionsTable() {
             </AlertDialogHeader>
             <AlertDialogBody>
               <AlertDialogDescription>
-                Are you sure you want to cancel this subscription? The team
-                will retain access until the end of their billing period.
+                Are you sure you want to cancel this subscription? The team will
+                retain access until the end of their billing period.
               </AlertDialogDescription>
             </AlertDialogBody>
             <AlertDialogFooter>
@@ -326,15 +331,13 @@ export function SubscriptionsTable() {
           </AlertDialogPopup>
         </AlertDialog>
 
-        {changePlanTarget && (
-          <ChangePlanDialog
-            open={!!changePlanTarget}
-            onOpenChange={(open) => !open && setChangePlanTarget(null)}
-            externalId={changePlanTarget.externalId}
-            channel={changePlanTarget.channel}
-            currentPlanId={changePlanTarget.planId}
-          />
-        )}
+        <ChangePlanDialog
+          open={!!changePlanTarget}
+          onOpenChange={(open) => !open && setChangePlanTarget(null)}
+          externalId={changePlanTarget?.externalId ?? ''}
+          channel={changePlanTarget?.channel ?? 'stripe'}
+          currentPlanId={changePlanTarget?.planId ?? ''}
+        />
       </CardBody>
     </Card>
   );

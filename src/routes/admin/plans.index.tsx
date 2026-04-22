@@ -25,7 +25,7 @@ function RouteComponent() {
   return (
     <div className="space-y-6">
       <PageHeader>
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between flex-wrap gap-2">
           <Heading>Plans</Heading>
           <Button
             nativeButton={false}

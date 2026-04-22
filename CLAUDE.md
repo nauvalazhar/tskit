@@ -62,7 +62,9 @@ src/
 │   ├── admin/                       # Admin pages (overview, users, subscriptions, plans, audit)
 │   └── api/
 │       ├── auth.$.ts                # Better Auth handler
-│       └── webhooks/stripe.ts       # Stripe webhook
+│       └── webhooks/
+│           ├── stripe.ts            # Stripe webhook
+│           └── polar.ts             # Polar webhook
 │
 ├── components/
 │   ├── selia/                       # Design system (27 components)
@@ -129,21 +131,25 @@ src/
 ├── middleware/
 │   ├── auth.ts                      # authMiddleware (redirects to /login)
 │   ├── org.ts                       # orgMiddleware (requires active org)
+│   ├── admin.ts                     # adminMiddleware (requires admin role)
 │   ├── email-verified.ts            # emailVerifiedMiddleware
 │   ├── subscribed.ts                # subscribedMiddleware (org subscription, chains org middleware)
+│   ├── rate-limit.ts                # createRateLimitMiddleware (per-route rate limiting)
 │   └── logging.ts                   # Request logging + serverFnErrorMiddleware
 │
-├── config/                          # Named channels — only place env vars are read
+├── config/                          # Named channels + static registries
 │   ├── features.ts                  # Feature registry (entitlement keys)
 │   ├── storage.ts                   # Storage channels (S3/R2)
 │   ├── mail.ts                      # Email channels (Resend)
-│   └── payment.ts                   # Payment channels (Stripe)
+│   ├── payment.ts                   # Payment channels (Stripe)
+│   └── rate-limit.ts               # Rate-limit channels (memory driver)
 │
 ├── lib/                             # App-level facades over core/
 │   ├── auth.ts                      # Better Auth server instance (org plugin, customSession)
 │   ├── auth-client.ts               # Better Auth client instance (org client plugin)
 │   ├── team.ts                      # Personal team auto-creation on signup
 │   ├── entitlements.ts              # hasFeature(), withinLimit(), requireLimit()
+│   ├── rate-limit.ts                # RateLimiter facade
 │   ├── storage.ts                   # storage.upload(), storage.use('private')
 │   ├── mailer.ts                    # mailer.send(template, to, data)
 │   ├── payment.ts                   # payment.checkout(), payment.portal()
@@ -168,6 +174,7 @@ src/
 ├── core/drivers/                    # Portable, config-injected driver classes
 │   ├── email/                       # EmailDriver interface + ResendEmailDriver
 │   ├── payment/                     # PaymentDriver interface + StripePaymentDriver
+│   ├── rate-limit/                  # RateLimitDriver interface + MemoryRateLimitDriver
 │   └── storage/                     # StorageDriver interface + S3StorageDriver
 │
 ├── router.tsx
@@ -186,21 +193,22 @@ routes → components → queries → functions → services → database/
 ```
 
 - `routes/` — thin shells. Loader calls `ensureQueryData`, renders components. No business logic.
-- `components/` — all UI, grouped by domain. Access session via `Route.useRouteContext()`.
+- `routes/api/` — server-only API handlers (auth, webhooks). May import services directly — no RPC boundary needed.
+- `components/` — all UI, grouped by domain. Access session via `Route.useRouteContext()`. May import static data and types from `config/` (e.g., `featureRegistry`, type imports) but NOT runtime facades from `lib/`.
 - `functions/` — server functions (RPC boundary). Auth via `.middleware()`, validation via `.validator()`.
 - `services/` — business logic + DB queries. Named function exports, NOT class instances.
-- `lib/` — facades over `core/`. Daily-driver imports (`storage`, `mailer`, `payment`).
-- `core/drivers/` — know *how* (S3, Resend, Stripe) but not *where*. Config-injected.
-- `config/` — only place env vars are read. Defines named channels.
+- `lib/` — facades over `core/`. Daily-driver imports (`storage`, `mailer`, `payment`, `rate-limit`).
+- `core/drivers/` — know *how* (S3, Resend, Stripe, in-memory rate-limit) but not *where*. Config-injected.
+- `config/` — named channels, static registries, and types. Primary place for env var reads, though server-only infrastructure (`database/`, `lib/auth.ts`, `lib/logger.ts`) may read env vars directly.
 - `validations/` — shared Zod schemas. Leaf dependency — no imports from app code. Importable by all layers.
 - `emails/` — server-only. Each file exports `subject` + default component.
 
-**Server-only safety:** Services, `lib/` facades, `core/` drivers, and DB code must always be called through `createServerFn` wrappers in `functions/`. Never call them directly from components.
+**Server-only safety:** Services, `lib/` facades, `core/` drivers, and DB code must always be called through `createServerFn` wrappers in `functions/`. Never call them directly from components. Exception: `routes/api/` handlers are server-only and may call services directly.
 
 ## Key Patterns
 
 ### Config → Driver → Facade
-Storage, email, and payment all follow: `config/*.ts` defines channels → `core/drivers/` implements the interface → `lib/*.ts` provides the facade. Consumers import from `lib/`, never from `core/` or `config/` directly.
+Storage, email, payment, and rate-limiting all follow: `config/*.ts` defines channels → `core/drivers/` implements the interface → `lib/*.ts` provides the facade. Consumers import from `lib/`, never from `core/` or `config/` directly.
 
 ### Middleware Chain
 Server functions use `.middleware([authMiddleware])` for auth. Middleware attaches `context.user`. Chain middlewares: `orgMiddleware` chains after auth and adds `context.organization` (active org). `subscribedMiddleware` chains after org and adds `context.subscription` with plan entitlements. Billing functions use `orgMiddleware` + role checks for owner/admin access.
@@ -267,10 +275,12 @@ Every user belongs to at least one team. Personal team auto-created on signup vi
 - Team settings: general (name/slug), members, delete (owner-only)
 - Team switcher in sidebar with create team dialog
 - Invitation flow: email invitations, acceptance page with inviter details
+- Rate limiting: in-memory rate-limit driver, middleware factory, wired into auth/billing/storage/team functions
 
 ## What's Planned (Not Yet Implemented)
 
 - Background jobs / queue system (no `core/drivers/queue/`, no `jobs/`, no `lib/queue.ts`)
+- Persistent rate-limit driver (Redis, etc.) — currently in-memory only
 
 ## Common Tasks
 
@@ -296,11 +306,11 @@ Every user belongs to at least one team. Personal team auto-created on signup vi
 
 ## Rules for AI Agents
 
-- **DO NOT** reference or create: `src/jobs/`, `core/drivers/queue/`, `lib/queue.ts`, `lib/rate-limit.ts` — these don't exist
+- **DO NOT** reference or create: `src/jobs/`, `core/drivers/queue/`, `lib/queue.ts` — these don't exist
 - **DO NOT** use class-based services. Existing services use named function exports.
-- **DO NOT** import from `core/` or `config/` in components or routes — use `lib/` facades
-- **DO NOT** call services or DB directly from components — always go through `functions/`
-- **DO NOT** read env vars outside of `config/` files (except `VITE_` prefixed vars in client code)
+- **DO NOT** import runtime facades from `lib/` in components or routes. Importing static data and types from `config/` is fine.
+- **DO NOT** call services or DB directly from components — always go through `functions/`. Exception: `routes/api/` handlers are server-only and may call services directly.
+- **DO NOT** read env vars in components or routes (except `VITE_` prefixed). Server-only infrastructure (`database/`, `lib/auth.ts`, `lib/logger.ts`) may read env vars directly.
 - **DO NOT** modify `routeTree.gen.ts` — it's auto-generated
 - The `#/*` import alias maps to `./src/*` (configured in package.json `imports`)
 - Auth schemas in `database/schemas/auth.ts` are generated by Better Auth CLI — edit with care

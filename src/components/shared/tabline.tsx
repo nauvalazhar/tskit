@@ -11,7 +11,7 @@ export function Tabline({
   return (
     <BaseTabs.Root
       data-slot="tabline"
-      className={cn('inline-flex flex-col gap-2.5', className)}
+      className={cn('inline-flex flex-col gap-2.5 max-sm:w-full', className)}
       {...props}
     />
   );
@@ -25,7 +25,10 @@ export function TablineList({
   return (
     <BaseTabs.List
       data-slot="tabline-list"
-      className={cn('relative z-0 flex items-center gap-6', className)}
+      className={cn(
+        'relative z-0 flex items-center gap-6 overflow-x-auto',
+        className,
+      )}
       {...props}
     >
       {children}
