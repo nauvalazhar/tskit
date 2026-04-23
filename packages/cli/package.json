@@ -1,0 +1,45 @@
+{
+  "name": "create-tskit",
+  "version": "0.1.0",
+  "description": "Create and manage TSKit projects — TanStack Start SaaS starter kit",
+  "type": "module",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nauvalazhar/tskit",
+    "directory": "packages/cli"
+  },
+  "homepage": "https://github.com/nauvalazhar/tskit",
+  "keywords": [
+    "tskit",
+    "tanstack",
+    "tanstack-start",
+    "saas",
+    "starter-kit",
+    "cli",
+    "create"
+  ],
+  "bin": {
+    "tskit": "./dist/index.js",
+    "create-tskit": "./dist/create.js"
+  },
+  "exports": {
+    ".": "./dist/index.js",
+    "./fs": "./dist/fs/index.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "bun build src/index.ts src/create.ts --outdir dist --target node",
+    "dev": "bun run src/index.ts"
+  },
+  "dependencies": {
+    "@clack/prompts": "^0.10.0",
+    "commander": "^13.1.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.2",
+    "@types/node": "^22.10.2"
+  }
+}

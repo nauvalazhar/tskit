@@ -1,239 +1,206 @@
 import { resolve, basename } from "node:path";
-import { readFile, writeFile, access, readdir } from "node:fs/promises";
+import { readFile, readdir } from "node:fs/promises";
 import { check, detect, prompt, run, pass, fail, found, notFound } from "../types.js";
 import type { Step, CommandDefinition } from "../types.js";
 import type { StepContext } from "../context.js";
+import { fileExists, readEnv, writeEnv } from "../fs/index.js";
+import type { EnvGroup } from "../fs/index.js";
+import { nodeVersionCheck, bunInstalledCheck } from "../steps/common.js";
 import { scaffoldTemplate } from "./template.js";
 
 // ---------------------------------------------------------------------------
-// Helpers
+// TSKit-specific configuration
 // ---------------------------------------------------------------------------
 
-function envLine(key: string, value: string): string {
-  return `${key}=${value}`;
-}
+/** Marker files that identify a TSKit project */
+const PROJECT_MARKERS = [
+  "src/routes/__root.tsx",
+  "src/lib/auth.ts",
+  "src/database/schemas/billing.ts",
+  "src/config/payment.ts",
+];
 
-async function fileExists(path: string): Promise<boolean> {
-  try {
-    await access(path);
-    return true;
-  } catch {
-    return false;
-  }
-}
+/** All env vars with their default values */
+const ENV_DEFAULTS: Record<string, string> = {
+  VITE_APP_URL: "http://localhost:3000",
+  VITE_APP_NAME: "TSKit",
+  DATABASE_URL: "postgresql://postgres:@localhost:5432/tskit",
+  BETTER_AUTH_SECRET: "",
+  BETTER_AUTH_URL: "http://localhost:3000",
+  EMAIL_PROVIDER: "resend",
+  EMAIL_FROM: "onboarding@resend.dev",
+  GITHUB_CLIENT_ID: "",
+  GITHUB_CLIENT_SECRET: "",
+  GOOGLE_CLIENT_ID: "",
+  GOOGLE_CLIENT_SECRET: "",
+  PAYMENT_PROVIDER: "stripe",
+  STRIPE_SECRET_KEY: "",
+  VITE_STRIPE_PUBLISHABLE_KEY: "",
+  STRIPE_WEBHOOK_SECRET: "",
+  RESEND_API_KEY: "",
+  SENDGRID_API_KEY: "",
+  POLAR_ACCESS_TOKEN: "",
+  POLAR_WEBHOOK_SECRET: "",
+  POLAR_SERVER: "",
+  S3_ENDPOINT: "",
+  S3_ACCESS_KEY_ID: "",
+  S3_SECRET_ACCESS_KEY: "",
+  S3_BUCKET: "",
+  S3_PUBLIC_URL: "",
+  S3_PRIVATE_BUCKET: "",
+  VITE_STORAGE_URL: "",
+};
 
-/**
- * Reads existing .env and returns a Map of key → value.
- */
-async function readEnvFile(dir: string): Promise<Map<string, string>> {
-  const envPath = resolve(dir, ".env");
-  const map = new Map<string, string>();
-  try {
-    const content = await readFile(envPath, "utf-8");
-    for (const line of content.split("\n")) {
-      const trimmed = line.trim();
-      if (!trimmed || trimmed.startsWith("#")) continue;
-      const eqIdx = trimmed.indexOf("=");
-      if (eqIdx === -1) continue;
-      map.set(trimmed.slice(0, eqIdx), trimmed.slice(eqIdx + 1));
-    }
-  } catch {
-    // no .env yet
-  }
-  return map;
-}
+/** How env vars are grouped in the .env file */
+const ENV_GROUPS: EnvGroup[] = [
+  { header: "App", keys: ["VITE_APP_URL", "VITE_APP_NAME"] },
+  { header: "Database (PostgreSQL)", keys: ["DATABASE_URL"] },
+  { header: "Auth (Better Auth)", keys: ["BETTER_AUTH_SECRET", "BETTER_AUTH_URL"] },
+  { header: "Social Login — GitHub", keys: ["GITHUB_CLIENT_ID", "GITHUB_CLIENT_SECRET"] },
+  { header: "Social Login — Google", keys: ["GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET"] },
+  { header: "Email", keys: ["EMAIL_PROVIDER", "EMAIL_FROM", "RESEND_API_KEY", "SENDGRID_API_KEY"] },
+  { header: "Storage (S3-compatible)", keys: ["S3_ENDPOINT", "S3_ACCESS_KEY_ID", "S3_SECRET_ACCESS_KEY", "S3_BUCKET", "S3_PRIVATE_BUCKET", "S3_PUBLIC_URL", "VITE_STORAGE_URL"] },
+  { header: "Billing (Stripe)", keys: ["PAYMENT_PROVIDER", "VITE_STRIPE_PUBLISHABLE_KEY", "STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET"] },
+  { header: "Billing (Polar)", keys: ["POLAR_ACCESS_TOKEN", "POLAR_WEBHOOK_SECRET", "POLAR_SERVER"] },
+];
 
-/**
- * Writes .env file, merging new values with existing ones.
- * Existing values are NOT overwritten unless --force is set.
- */
-async function writeEnvFile(
-  dir: string,
-  values: Record<string, string>,
-  force: boolean,
-): Promise<void> {
-  const envPath = resolve(dir, ".env");
-  const existing = await readEnvFile(dir);
-
-  // Merge: new values fill gaps, force overwrites all
-  for (const [key, val] of Object.entries(values)) {
-    if (force || !existing.has(key)) {
-      existing.set(key, val);
-    }
-  }
-
-  // Group output by domain for readability
-  const groups: { header: string; keys: string[] }[] = [
-    { header: "App", keys: ["VITE_APP_URL", "VITE_APP_NAME"] },
-    { header: "Database (PostgreSQL)", keys: ["DATABASE_URL"] },
-    { header: "Auth (Better Auth)", keys: ["BETTER_AUTH_SECRET", "BETTER_AUTH_URL"] },
-    { header: "Social Login — GitHub", keys: ["GITHUB_CLIENT_ID", "GITHUB_CLIENT_SECRET"] },
-    { header: "Social Login — Google", keys: ["GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET"] },
-    { header: "Email", keys: ["EMAIL_PROVIDER", "EMAIL_FROM", "RESEND_API_KEY", "SENDGRID_API_KEY"] },
-    { header: "Storage (S3-compatible)", keys: ["S3_ENDPOINT", "S3_ACCESS_KEY_ID", "S3_SECRET_ACCESS_KEY", "S3_BUCKET", "S3_PRIVATE_BUCKET", "S3_PUBLIC_URL", "VITE_STORAGE_URL"] },
-    { header: "Billing (Stripe)", keys: ["PAYMENT_PROVIDER", "VITE_STRIPE_PUBLISHABLE_KEY", "STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET"] },
-  ];
-
-  const lines: string[] = [
-    "# =============================================================================",
-    "# TSKit — Environment Variables",
-    "# =============================================================================",
-    "",
-  ];
-
-  const written = new Set<string>();
-
-  for (const group of groups) {
-    const groupLines: string[] = [];
-    for (const key of group.keys) {
-      if (existing.has(key)) {
-        groupLines.push(envLine(key, existing.get(key)!));
-        written.add(key);
-      }
-    }
-    if (groupLines.length > 0) {
-      lines.push(`# --- ${group.header} ---`);
-      lines.push(...groupLines);
-      lines.push("");
-    }
-  }
-
-  // Any remaining keys not in groups
-  for (const [key, val] of existing) {
-    if (!written.has(key)) {
-      lines.push(envLine(key, val));
-    }
-  }
-
-  lines.push(""); // trailing newline
-  await writeFile(envPath, lines.join("\n"), "utf-8");
-}
+/** Maps env var keys to auth provider names */
+const PROVIDER_DETECTION: Record<string, string> = {
+  GITHUB_CLIENT_ID: "github",
+  GOOGLE_CLIENT_ID: "google",
+};
 
 // ---------------------------------------------------------------------------
 // Init steps — reusable from create command
 // ---------------------------------------------------------------------------
 
 export function initSteps(baseGetDir: (ctx: StepContext) => string): Step[] {
-  // Once scaffold sets projectDir, use that for all remaining steps
   const getDir = (ctx: StepContext) => ctx.get<string>("projectDir") ?? baseGetDir(ctx);
 
   return [
     // -- Preflight checks --------------------------------------------------
-    check("node-version", {
-      run: async (ctx) => {
-        const { stdout, exitCode } = await ctx.run("node --version");
-        if (exitCode !== 0) return fail("Node.js is not installed");
-        const match = stdout.match(/v(\d+)/);
-        const major = match ? parseInt(match[1], 10) : 0;
-        if (major < 18) return fail(`Node >= 18 required (found ${stdout})`);
-        return pass(`Node ${stdout}`);
-      },
-    }),
+    nodeVersionCheck(),
+    bunInstalledCheck(),
 
-    check("bun-installed", {
-      run: async (ctx) => {
-        const { stdout, exitCode } = await ctx.run("bun --version");
-        if (exitCode !== 0) return fail("Bun is not installed — https://bun.sh");
-        return pass(`Bun v${stdout}`);
-      },
-    }),
-
+    // -- Project detection -------------------------------------------------
     check("tskit-project", {
       run: async (ctx) => {
         const dir = getDir(ctx);
-
-        // TSKit-specific markers — a combination that only exists in a TSKit project
-        const markers = [
-          "src/routes/__root.tsx",
-          "src/lib/auth.ts",
-          "src/database/schemas/billing.ts",
-          "src/config/payment.ts",
-        ];
+        const dirArg = ctx.arg("directory");
 
         const results = await Promise.all(
-          markers.map((m) => fileExists(resolve(dir, m))),
+          PROJECT_MARKERS.map((m) => fileExists(resolve(dir, m))),
         );
 
         if (results.every(Boolean)) {
+          if (dirArg && dirArg !== ".") ctx.set("projectName", basename(resolve(dirArg)));
           ctx.set("tskitProjectState", "exists");
           return pass("TSKit project detected");
         }
 
-        // Not a TSKit project — check if directory is empty
         const dirEntries = await readdir(dir).catch(() => []);
         const isEmpty = dirEntries.length === 0;
-        ctx.set("tskitProjectState", isEmpty ? "empty" : "non-empty");
-        return pass(isEmpty ? "Empty directory" : "No TSKit project found");
+
+        if (isEmpty) {
+          // Empty dir — use directory name as project name
+          if (dirArg && dirArg !== ".") ctx.set("projectName", basename(resolve(dirArg)));
+          ctx.set("tskitProjectState", "empty");
+          return pass("Empty directory");
+        }
+
+        // Non-empty, not TSKit — don't set name, prompt for it (it's a subdirectory)
+        ctx.set("tskitProjectState", "non-empty");
+        return pass("No TSKit project found");
       },
     }),
 
-    // Empty dir → ask to create here
-    prompt("create-here-prompt", {
-      message: "No TSKit project found. Create one here?",
-      promptType: "confirm",
-      when: (ctx) => ctx.get<string>("tskitProjectState") === "empty",
-      set: (ctx, value) => {
-        ctx.set("tskitProjectState", value ? "create" : "declined");
+    // -- Load existing .env into context -----------------------------------
+    run("load-env", {
+      message: "Reading existing configuration",
+      when: (ctx) => ctx.get("tskitProjectState") === "exists",
+      run: async (ctx) => {
+        const dir = getDir(ctx);
+        const env = await readEnv(dir);
+
+        for (const [key, val] of env) {
+          if (val) ctx.set(key, val);
+        }
+
+        try {
+          const pkg = JSON.parse(await readFile(resolve(dir, "package.json"), "utf-8"));
+          if (pkg.name) ctx.set("projectName", pkg.name);
+        } catch {
+          // no package.json
+        }
+
+        // Detect configured auth providers
+        const providers: string[] = [];
+        for (const [envKey, provider] of Object.entries(PROVIDER_DETECTION)) {
+          if (env.get(envKey)) providers.push(provider);
+        }
+        if (providers.length > 0) ctx.set("authProviders", providers);
       },
     }),
 
-    // Non-empty dir → ask for a subdirectory name
-    prompt("create-subdir-prompt", {
-      message: "No TSKit project found. Enter a directory name to create one",
-      when: (ctx) => ctx.get<string>("tskitProjectState") === "non-empty",
-      default: "my-app",
+    // -- Project name --------------------------------------------------------
+    prompt("project-name", {
+      message: "Project name (used as directory and package name)",
+      fromFlag: "name",
+      fromContext: "projectName",
+      when: (ctx) => ctx.get("tskitProjectState") !== "exists",
+      placeholder: "my-saas-app",
       validate: (v) => {
-        if (!v.length) return "Directory name is required";
-        if (/[^a-zA-Z0-9._-]/.test(v)) return "Only letters, numbers, dots, hyphens, and underscores allowed";
+        if (!v.length) return "Project name is required";
+        if (/[^a-zA-Z0-9._-]/.test(v)) return "Only lowercase letters, numbers, dots, hyphens, and underscores";
         return true;
       },
       set: (ctx, value) => {
-        const dir = getDir(ctx);
-        ctx.set("projectDir", resolve(dir, value as string));
+        ctx.set("projectName", value);
+        if (!ctx.get("VITE_APP_NAME")) ctx.set("VITE_APP_NAME", value);
+        const state = ctx.get<string>("tskitProjectState");
+        if (state === "non-empty") {
+          ctx.set("projectDir", resolve(getDir(ctx), value as string));
+        }
         ctx.set("tskitProjectState", "create");
       },
     }),
 
-    check("create-project-confirm", {
-      run: async (ctx) => {
-        const state = ctx.get<string>("tskitProjectState");
-        if (state === "exists" || state === "create") return pass();
-        return fail("Run `tskit create <directory>` to start a new project.");
-      },
-      when: (ctx) => ctx.get<string>("tskitProjectState") !== "exists",
-    }),
-
-    run("scaffold-project", {
-      message: "Downloading TSKit template",
-      when: (ctx) => ctx.get<string>("tskitProjectState") === "create",
-      run: async (ctx) => {
-        // Use projectDir if set (subdirectory case), otherwise the original dir
-        const dir = ctx.get<string>("projectDir") ?? getDir(ctx);
-        await scaffoldTemplate(ctx, dir);
-        // Update getDir to point at the new project for remaining steps
-        ctx.set("projectDir", dir);
-      },
-    }),
-
-    // -- Project name ------------------------------------------------------
-    prompt("project-name", {
-      message: "Project name",
+    prompt("project-name-existing", {
+      message: "Project name (used as directory and package name)",
       fromFlag: "name",
+      fromContext: "projectName",
+      when: (ctx) => ctx.get("tskitProjectState") === "exists",
       default: (ctx) => basename(resolve(getDir(ctx))),
       set: (ctx, value) => ctx.set("projectName", value),
+    }),
+
+    prompt("app-display-name", {
+      message: "App display name (shown in the UI)",
+      fromContext: "VITE_APP_NAME",
+      when: (ctx) => ctx.flag("skipSetup") !== true,
+      default: (ctx) => ctx.get<string>("projectName") ?? "TSKit",
+      set: (ctx, value) => ctx.set("VITE_APP_NAME", value),
+    }),
+
+    // -- Scaffold (if creating) --------------------------------------------
+    run("scaffold-project", {
+      message: "Downloading TSKit template",
+      when: (ctx) => ctx.get("tskitProjectState") === "create",
+      run: async (ctx) => {
+        const dir = ctx.get<string>("projectDir") ?? getDir(ctx);
+        await scaffoldTemplate(ctx, dir);
+        ctx.set("projectDir", dir);
+      },
     }),
 
     // -- Database ----------------------------------------------------------
     detect("database-url", {
       message: "Database URL",
       fromFlag: "database",
+      when: (ctx) => ctx.flag("skipSetup") !== true,
       run: async (ctx) => {
-        const dir = getDir(ctx);
-        const env = await readEnvFile(dir);
-        const url = env.get("DATABASE_URL") || process.env.DATABASE_URL;
-        if (url && url !== "postgresql://postgres:@localhost:5432/tskit") {
-          return found(url);
-        }
+        const url = ctx.get<string>("DATABASE_URL");
+        if (url) return found(url);
         return notFound();
       },
       fallback: prompt("database-setup-method", {
@@ -247,51 +214,85 @@ export function initSteps(baseGetDir: (ctx: StepContext) => string): Step[] {
         set: (ctx, value) => ctx.set("dbSetupMethod", value),
       }),
       set: (ctx, value) => {
-        // If detect found a URL, store it directly
         if (ctx.get("dbSetupMethod") === undefined) {
-          ctx.set("databaseUrl", value);
+          ctx.set("DATABASE_URL", value);
         }
       },
     }),
 
-    // Auto-create: detect local Postgres and create the database
-    run("db-auto-create", {
-      message: "Creating database",
-      when: (ctx) => ctx.get<string>("dbSetupMethod") === "Create automatically",
+    check("postgres-available", {
+      run: async (ctx) => {
+        const { exitCode: hasPsql } = await ctx.run("which psql");
+        if (hasPsql !== 0) return fail("PostgreSQL is not installed — https://postgresql.org/download");
+
+        const { exitCode, stdout } = await ctx.run("psql -lqt 2>&1");
+        if (exitCode !== 0) {
+          if (stdout.includes("password") || stdout.includes("authentication") || stdout.includes("FATAL")) {
+            return fail("PostgreSQL requires authentication. Use 'Enter connection details' instead.");
+          }
+          if (stdout.includes("refused") || stdout.includes("No such file")) {
+            return fail("PostgreSQL is not running. Start it first, then try again.");
+          }
+          return fail(`Cannot connect to PostgreSQL: ${stdout.split("\n")[0]}`);
+        }
+
+        return pass("PostgreSQL is running");
+      },
+      when: (ctx) => ctx.get("dbSetupMethod") === "Create automatically",
+    }),
+
+    check("db-not-exists-or-empty", {
       run: async (ctx) => {
         const dbName = ctx.get<string>("projectName")?.replace(/[^a-zA-Z0-9_-]/g, "_") || "tskit";
+        ctx.set("dbName", dbName);
 
-        // Check if createdb is available (Postgres is installed)
-        const { exitCode: pgCheck } = await ctx.run("which createdb");
-        if (pgCheck !== 0) {
-          throw new Error(
-            "PostgreSQL client tools not found. Install PostgreSQL or choose 'Enter connection details' instead.",
-          );
+        const { exitCode } = await ctx.run(
+          `psql -lqt | cut -d \\| -f 1 | grep -qw "${dbName}"`,
+        );
+
+        if (exitCode !== 0) return pass(`Database "${dbName}" will be created`);
+
+        const { stdout: tableCount } = await ctx.run(
+          `psql -tAc "SELECT count(*) FROM information_schema.tables WHERE table_schema = 'public'" "${dbName}"`,
+        );
+        if (parseInt(tableCount, 10) > 0) {
+          return fail(`Database "${dbName}" already exists and is not empty. Use a different name or drop it first:\n  dropdb "${dbName}"`);
         }
 
-        // Try to create the database (ignore error if it already exists)
-        const { exitCode, stdout } = await ctx.run(`createdb "${dbName}" 2>&1`);
-        if (exitCode !== 0 && !stdout.includes("already exists")) {
-          throw new Error(`Failed to create database: ${stdout}`);
+        return pass(`Database "${dbName}" exists (empty)`);
+      },
+      when: (ctx) => ctx.get("dbSetupMethod") === "Create automatically",
+    }),
+
+    run("create-database", {
+      message: "Creating database",
+      when: (ctx) => ctx.get("dbSetupMethod") === "Create automatically",
+      run: async (ctx) => {
+        const dbName = ctx.get<string>("dbName")!;
+
+        const { exitCode: existsCheck } = await ctx.run(
+          `psql -lqt | cut -d \\| -f 1 | grep -qw "${dbName}"`,
+        );
+        if (existsCheck !== 0) {
+          const { exitCode, stdout } = await ctx.run(`createdb "${dbName}"`);
+          if (exitCode !== 0) throw new Error(`Failed to create database "${dbName}": ${stdout}`);
         }
 
-        const url = `postgresql://localhost:5432/${dbName}`;
-        ctx.set("databaseUrl", url);
+        ctx.set("DATABASE_URL", `postgresql://localhost:5432/${dbName}`);
       },
     }),
 
-    // Enter details: prompt for host, port, user, password, db name
     prompt("db-host", {
       message: "Database host",
       default: "localhost",
-      when: (ctx) => ctx.get<string>("dbSetupMethod") === "Enter connection details",
+      when: (ctx) => ctx.get("dbSetupMethod") === "Enter connection details",
       set: (ctx, value) => ctx.set("dbHost", value),
     }),
 
     prompt("db-port", {
       message: "Database port",
       default: "5432",
-      when: (ctx) => ctx.get<string>("dbSetupMethod") === "Enter connection details",
+      when: (ctx) => ctx.get("dbSetupMethod") === "Enter connection details",
       validate: (v) => /^\d+$/.test(v) || "Must be a number",
       set: (ctx, value) => ctx.set("dbPort", value),
     }),
@@ -299,161 +300,157 @@ export function initSteps(baseGetDir: (ctx: StepContext) => string): Step[] {
     prompt("db-user", {
       message: "Database user",
       default: "postgres",
-      when: (ctx) => ctx.get<string>("dbSetupMethod") === "Enter connection details",
+      when: (ctx) => ctx.get("dbSetupMethod") === "Enter connection details",
       set: (ctx, value) => ctx.set("dbUser", value),
     }),
 
     prompt("db-password", {
       message: "Database password (leave empty for none)",
       default: "",
-      when: (ctx) => ctx.get<string>("dbSetupMethod") === "Enter connection details",
+      when: (ctx) => ctx.get("dbSetupMethod") === "Enter connection details",
       set: (ctx, value) => ctx.set("dbPassword", value),
     }),
 
     prompt("db-name", {
       message: "Database name",
-      when: (ctx) => ctx.get<string>("dbSetupMethod") === "Enter connection details",
+      when: (ctx) => ctx.get("dbSetupMethod") === "Enter connection details",
       default: (ctx) => ctx.get<string>("projectName")?.replace(/[^a-zA-Z0-9_-]/g, "_") || "tskit",
       set: (ctx, value) => {
-        ctx.set("dbName", value);
         const host = ctx.get<string>("dbHost") ?? "localhost";
         const port = ctx.get<string>("dbPort") ?? "5432";
         const user = ctx.get<string>("dbUser") ?? "postgres";
         const password = ctx.get<string>("dbPassword") ?? "";
         const auth = password ? `${user}:${password}` : user;
-        ctx.set("databaseUrl", `postgresql://${auth}@${host}:${port}/${value}`);
+        ctx.set("DATABASE_URL", `postgresql://${auth}@${host}:${port}/${value}`);
       },
     }),
 
-    // Enter connection string: raw URL for advanced users
     prompt("db-connection-string", {
       message: "PostgreSQL connection string (e.g. postgresql://user:pass@host:5432/dbname)",
-      when: (ctx) => ctx.get<string>("dbSetupMethod") === "Enter connection string",
+      when: (ctx) => ctx.get("dbSetupMethod") === "Enter connection string",
       validate: (v) => v.startsWith("postgres") || "Must start with postgresql:// or postgres://",
-      set: (ctx, value) => ctx.set("databaseUrl", value),
+      set: (ctx, value) => ctx.set("DATABASE_URL", value),
     }),
 
-    // -- Auth providers ----------------------------------------------------
+    // -- Configure services? ------------------------------------------------
+    prompt("configure-now", {
+      message: "Configure services now? (OAuth, Stripe, Resend, S3)",
+      promptType: "confirm",
+      default: "false",
+      when: (ctx) => ctx.flag("skipSetup") !== true && ctx.get("tskitProjectState") !== "exists",
+      set: (ctx, value) => ctx.set("configureNow", value),
+    }),
+
+    // -- OAuth providers (optional) -----------------------------------------
     prompt("auth-providers", {
-      message: "Which OAuth providers would you like to enable?",
+      message: "OAuth providers (skip to configure later)",
       promptType: "multiselect",
       choices: ["github", "google"],
+      when: (ctx) => ctx.flag("skipSetup") !== true && ctx.get("configureNow") !== false && !ctx.has("authProviders"),
       set: (ctx, value) => ctx.set("authProviders", value),
     }),
 
-    // GitHub credentials (conditional)
     prompt("github-client-id", {
       message: "GitHub Client ID",
-      env: "GITHUB_CLIENT_ID",
-      when: (ctx) => {
-        const providers = ctx.get<string[]>("authProviders") ?? [];
-        return providers.includes("github");
-      },
-      set: (ctx, value) => ctx.set("githubClientId", value),
+      fromContext: "GITHUB_CLIENT_ID",
+      when: (ctx) => (ctx.get<string[]>("authProviders") ?? []).includes("github"),
+      set: (ctx, value) => ctx.set("GITHUB_CLIENT_ID", value),
     }),
 
     prompt("github-client-secret", {
       message: "GitHub Client Secret",
-      env: "GITHUB_CLIENT_SECRET",
-      when: (ctx) => {
-        const providers = ctx.get<string[]>("authProviders") ?? [];
-        return providers.includes("github");
-      },
-      set: (ctx, value) => ctx.set("githubClientSecret", value),
+      fromContext: "GITHUB_CLIENT_SECRET",
+      when: (ctx) => (ctx.get<string[]>("authProviders") ?? []).includes("github"),
+      set: (ctx, value) => ctx.set("GITHUB_CLIENT_SECRET", value),
     }),
 
-    // Google credentials (conditional)
     prompt("google-client-id", {
       message: "Google Client ID",
-      env: "GOOGLE_CLIENT_ID",
-      when: (ctx) => {
-        const providers = ctx.get<string[]>("authProviders") ?? [];
-        return providers.includes("google");
-      },
-      set: (ctx, value) => ctx.set("googleClientId", value),
+      fromContext: "GOOGLE_CLIENT_ID",
+      when: (ctx) => (ctx.get<string[]>("authProviders") ?? []).includes("google"),
+      set: (ctx, value) => ctx.set("GOOGLE_CLIENT_ID", value),
     }),
 
     prompt("google-client-secret", {
       message: "Google Client Secret",
-      env: "GOOGLE_CLIENT_SECRET",
-      when: (ctx) => {
-        const providers = ctx.get<string[]>("authProviders") ?? [];
-        return providers.includes("google");
-      },
-      set: (ctx, value) => ctx.set("googleClientSecret", value),
+      fromContext: "GOOGLE_CLIENT_SECRET",
+      when: (ctx) => (ctx.get<string[]>("authProviders") ?? []).includes("google"),
+      set: (ctx, value) => ctx.set("GOOGLE_CLIENT_SECRET", value),
     }),
 
-    // -- Billing -----------------------------------------------------------
-    prompt("enable-billing", {
-      message: "Enable Stripe billing?",
-      promptType: "confirm",
-      set: (ctx, value) => ctx.set("enableBilling", value),
-    }),
-
+    // -- Stripe ------------------------------------------------------------
     prompt("stripe-secret-key", {
-      message: "Stripe Secret Key",
-      env: "STRIPE_SECRET_KEY",
-      when: (ctx) => ctx.get<boolean>("enableBilling") === true,
-      set: (ctx, value) => ctx.set("stripeSecretKey", value),
+      message: "Stripe Secret Key (Enter to skip)",
+      fromContext: "STRIPE_SECRET_KEY",
+      when: (ctx) => ctx.flag("skipSetup") !== true && ctx.get("configureNow") !== false,
+      set: (ctx, value) => { if (value) ctx.set("STRIPE_SECRET_KEY", value); },
     }),
 
     prompt("stripe-publishable-key", {
       message: "Stripe Publishable Key",
-      env: "VITE_STRIPE_PUBLISHABLE_KEY",
-      when: (ctx) => ctx.get<boolean>("enableBilling") === true,
-      set: (ctx, value) => ctx.set("stripePublishableKey", value),
+      fromContext: "VITE_STRIPE_PUBLISHABLE_KEY",
+      when: (ctx) => !!ctx.get("STRIPE_SECRET_KEY"),
+      set: (ctx, value) => ctx.set("VITE_STRIPE_PUBLISHABLE_KEY", value),
     }),
 
     prompt("stripe-webhook-secret", {
       message: "Stripe Webhook Secret",
-      env: "STRIPE_WEBHOOK_SECRET",
-      when: (ctx) => ctx.get<boolean>("enableBilling") === true,
-      set: (ctx, value) => ctx.set("stripeWebhookSecret", value),
+      fromContext: "STRIPE_WEBHOOK_SECRET",
+      when: (ctx) => !!ctx.get("STRIPE_SECRET_KEY"),
+      set: (ctx, value) => ctx.set("STRIPE_WEBHOOK_SECRET", value),
     }),
 
-    // -- Email -------------------------------------------------------------
+    // -- Resend ------------------------------------------------------------
     prompt("resend-api-key", {
-      message: "Resend API Key",
-      env: "RESEND_API_KEY",
-      set: (ctx, value) => ctx.set("resendApiKey", value),
+      message: "Resend API Key (Enter to skip)",
+      fromContext: "RESEND_API_KEY",
+      when: (ctx) => ctx.flag("skipSetup") !== true && ctx.get("configureNow") !== false,
+      set: (ctx, value) => { if (value) ctx.set("RESEND_API_KEY", value); },
     }),
 
     prompt("email-from", {
       message: "Sender email address",
-      env: "EMAIL_FROM",
+      fromContext: "EMAIL_FROM",
       default: "onboarding@resend.dev",
-      set: (ctx, value) => ctx.set("emailFrom", value),
+      when: (ctx) => !!ctx.get("RESEND_API_KEY"),
+      set: (ctx, value) => ctx.set("EMAIL_FROM", value),
     }),
 
-    // -- Storage -----------------------------------------------------------
+    // -- S3 Storage --------------------------------------------------------
     prompt("s3-endpoint", {
-      message: "S3 Endpoint URL (e.g. https://<account>.r2.cloudflarestorage.com)",
-      env: "S3_ENDPOINT",
-      set: (ctx, value) => ctx.set("s3Endpoint", value),
+      message: "S3 Endpoint URL (Enter to skip)",
+      fromContext: "S3_ENDPOINT",
+      placeholder: "https://<account>.r2.cloudflarestorage.com",
+      when: (ctx) => ctx.flag("skipSetup") !== true && ctx.get("configureNow") !== false,
+      set: (ctx, value) => { if (value) ctx.set("S3_ENDPOINT", value); },
     }),
 
     prompt("s3-access-key-id", {
       message: "S3 Access Key ID",
-      env: "S3_ACCESS_KEY_ID",
-      set: (ctx, value) => ctx.set("s3AccessKeyId", value),
+      fromContext: "S3_ACCESS_KEY_ID",
+      when: (ctx) => !!ctx.get("S3_ENDPOINT"),
+      set: (ctx, value) => ctx.set("S3_ACCESS_KEY_ID", value),
     }),
 
     prompt("s3-secret-access-key", {
       message: "S3 Secret Access Key",
-      env: "S3_SECRET_ACCESS_KEY",
-      set: (ctx, value) => ctx.set("s3SecretAccessKey", value),
+      fromContext: "S3_SECRET_ACCESS_KEY",
+      when: (ctx) => !!ctx.get("S3_ENDPOINT"),
+      set: (ctx, value) => ctx.set("S3_SECRET_ACCESS_KEY", value),
     }),
 
     prompt("s3-bucket", {
       message: "S3 Bucket Name",
-      env: "S3_BUCKET",
-      set: (ctx, value) => ctx.set("s3Bucket", value),
+      fromContext: "S3_BUCKET",
+      when: (ctx) => !!ctx.get("S3_ENDPOINT"),
+      set: (ctx, value) => ctx.set("S3_BUCKET", value),
     }),
 
     prompt("s3-public-url", {
       message: "S3 Public URL",
-      env: "S3_PUBLIC_URL",
-      set: (ctx, value) => ctx.set("s3PublicUrl", value),
+      fromContext: "S3_PUBLIC_URL",
+      when: (ctx) => !!ctx.get("S3_ENDPOINT"),
+      set: (ctx, value) => ctx.set("S3_PUBLIC_URL", value),
     }),
 
     // -- Write .env --------------------------------------------------------
@@ -463,88 +460,71 @@ export function initSteps(baseGetDir: (ctx: StepContext) => string): Step[] {
         const dir = getDir(ctx);
         const force = ctx.flag("force") === true;
 
-        // Generate a random auth secret
-        const { stdout: authSecret } = await ctx.run("openssl rand -base64 32");
-
-        const values: Record<string, string> = {
-          VITE_APP_URL: "http://localhost:3000",
-          VITE_APP_NAME: (ctx.get<string>("projectName") ?? "TSKit"),
-          DATABASE_URL: (ctx.get<string>("databaseUrl") ?? "postgresql://postgres:@localhost:5432/tskit"),
-          BETTER_AUTH_SECRET: authSecret || "change-me-to-a-random-secret",
-          BETTER_AUTH_URL: "http://localhost:3000",
-          EMAIL_PROVIDER: "resend",
-          EMAIL_FROM: (ctx.get<string>("emailFrom") ?? "onboarding@resend.dev"),
-        };
-
-        // Auth providers
-        const providers = ctx.get<string[]>("authProviders") ?? [];
-        if (providers.includes("github")) {
-          values.GITHUB_CLIENT_ID = (ctx.get<string>("githubClientId") ?? "");
-          values.GITHUB_CLIENT_SECRET = (ctx.get<string>("githubClientSecret") ?? "");
-        }
-        if (providers.includes("google")) {
-          values.GOOGLE_CLIENT_ID = (ctx.get<string>("googleClientId") ?? "");
-          values.GOOGLE_CLIENT_SECRET = (ctx.get<string>("googleClientSecret") ?? "");
+        if (!ctx.get("BETTER_AUTH_SECRET")) {
+          const { stdout } = await ctx.run("openssl rand -base64 32");
+          ctx.set("BETTER_AUTH_SECRET", stdout || "change-me-to-a-random-secret");
         }
 
-        // Billing
-        if (ctx.get<boolean>("enableBilling")) {
-          values.PAYMENT_PROVIDER = "stripe";
-          values.STRIPE_SECRET_KEY = (ctx.get<string>("stripeSecretKey") ?? "");
-          values.VITE_STRIPE_PUBLISHABLE_KEY = (ctx.get<string>("stripePublishableKey") ?? "");
-          values.STRIPE_WEBHOOK_SECRET = (ctx.get<string>("stripeWebhookSecret") ?? "");
+        if (!ctx.get("VITE_APP_NAME")) {
+          ctx.set("VITE_APP_NAME", ctx.get<string>("projectName") ?? "TSKit");
         }
 
-        // Email
-        values.RESEND_API_KEY = (ctx.get<string>("resendApiKey") ?? "");
+        const values: Record<string, string> = {};
+        for (const [key, fallback] of Object.entries(ENV_DEFAULTS)) {
+          values[key] = ctx.get<string>(key) ?? fallback;
+        }
 
-        // Storage
-        values.S3_ENDPOINT = (ctx.get<string>("s3Endpoint") ?? "");
-        values.S3_ACCESS_KEY_ID = (ctx.get<string>("s3AccessKeyId") ?? "");
-        values.S3_SECRET_ACCESS_KEY = (ctx.get<string>("s3SecretAccessKey") ?? "");
-        values.S3_BUCKET = (ctx.get<string>("s3Bucket") ?? "");
-        values.S3_PUBLIC_URL = (ctx.get<string>("s3PublicUrl") ?? "");
-        values.S3_PRIVATE_BUCKET = "";
-        values.VITE_STORAGE_URL = "";
-
-        await writeEnvFile(dir, values, force);
+        await writeEnv(dir, values, {
+          force,
+          groups: ENV_GROUPS,
+          header: "TSKit — Environment Variables",
+        });
       },
     }),
 
-    // -- Install dependencies ----------------------------------------------
+    // -- Install & setup ---------------------------------------------------
     run("bun-install", {
       message: "Installing dependencies",
       run: async (ctx) => {
         const dir = getDir(ctx);
-        const { exitCode, stdout } = await ctx.run(`cd "${dir}" && bun install`);
+        const { exitCode, stdout } = await ctx.run("bun install", { cwd: dir });
         if (exitCode !== 0) throw new Error(stdout);
       },
     }),
 
-    // -- Database setup ----------------------------------------------------
     run("db-generate", {
       message: "Generating database migrations",
+      when: (ctx) => ctx.flag("skipSetup") !== true,
       run: async (ctx) => {
         const dir = getDir(ctx);
-        const { exitCode, stdout } = await ctx.run(`cd "${dir}" && bun run db:generate`);
+        const { rm } = await import("node:fs/promises");
+        await rm(resolve(dir, "src/database/migrations"), { recursive: true, force: true });
+        const { exitCode, stdout } = await ctx.run("bun --env-file .env run db:generate", { cwd: dir });
         if (exitCode !== 0) throw new Error(stdout);
       },
     }),
 
     run("db-migrate", {
       message: "Running database migrations",
+      when: (ctx) => ctx.flag("skipSetup") !== true,
       run: async (ctx) => {
         const dir = getDir(ctx);
-        const { exitCode, stdout } = await ctx.run(`cd "${dir}" && bun run db:migrate`);
-        if (exitCode !== 0) throw new Error(stdout);
+        const { exitCode, stdout } = await ctx.run("bun --env-file .env run db:migrate", { cwd: dir });
+        if (exitCode !== 0) {
+          if (stdout.includes("already exists")) {
+            ctx.log("Some tables already exist — drop and recreate the database for a clean migration, or run migrations manually.");
+          }
+          throw new Error(stdout);
+        }
       },
     }),
 
     run("db-seed", {
       message: "Seeding database",
+      when: (ctx) => ctx.flag("skipSetup") !== true,
       run: async (ctx) => {
         const dir = getDir(ctx);
-        const { exitCode, stdout } = await ctx.run(`cd "${dir}" && bun run db:seed`);
+        const { exitCode, stdout } = await ctx.run("bun --env-file .env run db:seed", { cwd: dir });
         if (exitCode !== 0) throw new Error(stdout);
       },
     }),
@@ -564,19 +544,50 @@ export const initCommand: CommandDefinition = {
     { name: "name", alias: "n", description: "Project name", type: "string" },
     { name: "database", alias: "d", description: "Database URL", type: "string" },
     { name: "force", alias: "f", description: "Re-prompt and overwrite everything", type: "boolean", default: false },
+    { name: "skip-setup", alias: "s", description: "Skip database and service setup", type: "boolean", default: false },
   ],
   steps: initSteps((ctx) => resolve(ctx.arg("directory") || ".")),
   summary: (ctx) => {
-    const name = ctx.get<string>("projectName") ?? "TSKit";
-    const providers = ctx.get<string[]>("authProviders") ?? [];
-    const billing = ctx.get<boolean>("enableBilling") ? "Stripe" : "none";
-    const features = [
-      providers.length > 0 ? `OAuth: ${providers.join(", ")}` : null,
-      `Billing: ${billing}`,
-      "Email: Resend",
-      "Storage: R2",
-    ].filter(Boolean).join(" | ");
+    const name = ctx.get<string>("VITE_APP_NAME") ?? ctx.get<string>("projectName") ?? "TSKit";
+    const dir = ctx.get<string>("projectDir");
+    const cwd = resolve(".");
+    const needsCd = dir && resolve(dir) !== cwd;
+    const dirName = dir ? basename(resolve(dir)) : null;
 
-    return `${name} is ready!\n  ${features}\n  Run: bun dev`;
+    const lines: string[] = [];
+
+    if (ctx.flag("skipSetup") === true) {
+      lines.push(`${name} downloaded!`);
+      lines.push("");
+      lines.push("  Next steps:");
+      if (needsCd) lines.push(`    cd ${dirName}`);
+      lines.push("    cp .env.example .env     # edit with your values");
+      lines.push("    bun run db:generate");
+      lines.push("    bun run db:migrate");
+      lines.push("    bun run db:seed");
+      lines.push("    bun dev");
+      return lines.join("\n");
+    }
+
+    const unconfigured: string[] = [];
+    if (!ctx.get("STRIPE_SECRET_KEY")) unconfigured.push("Stripe");
+    if (!ctx.get("RESEND_API_KEY")) unconfigured.push("Resend");
+    if (!ctx.get("S3_ENDPOINT")) unconfigured.push("S3 Storage");
+
+    lines.push(`${name} is ready!`);
+    lines.push("");
+    lines.push("  Next steps:");
+    if (needsCd) {
+      lines.push(`    cd ${dirName}`);
+    }
+    lines.push("    bun dev");
+
+    if (unconfigured.length > 0) {
+      lines.push("");
+      lines.push(`  Not configured: ${unconfigured.join(", ")}`);
+      lines.push("  Add the missing keys to .env when ready");
+    }
+
+    return lines.join("\n");
   },
 };

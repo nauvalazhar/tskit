@@ -1,42 +1,10 @@
 import { resolve } from "node:path";
-import { readFile, access } from "node:fs/promises";
 import * as clack from "@clack/prompts";
 import { check, run, pass, fail } from "../types.js";
 import type { Step, CommandDefinition } from "../types.js";
 import type { StepContext } from "../context.js";
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-async function fileExists(path: string): Promise<boolean> {
-  try {
-    await access(path);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-async function readEnvFile(dir: string): Promise<Map<string, string>> {
-  const envPath = resolve(dir, ".env");
-  const map = new Map<string, string>();
-  try {
-    const content = await readFile(envPath, "utf-8");
-    for (const line of content.split("\n")) {
-      const trimmed = line.trim();
-      if (!trimmed || trimmed.startsWith("#")) continue;
-      const eqIdx = trimmed.indexOf("=");
-      if (eqIdx === -1) continue;
-      const key = trimmed.slice(0, eqIdx);
-      const val = trimmed.slice(eqIdx + 1);
-      if (val) map.set(key, val);
-    }
-  } catch {
-    // no .env
-  }
-  return map;
-}
+import { fileExists, readEnv } from "../fs/index.js";
+import { nodeVersionCheck, bunInstalledCheck } from "../steps/common.js";
 
 // ---------------------------------------------------------------------------
 // Doctor steps
@@ -46,24 +14,8 @@ function doctorSteps(): Step[] {
   const dir = process.cwd();
 
   return [
-    check("node-version", {
-      run: async (ctx) => {
-        const { stdout, exitCode } = await ctx.run("node --version");
-        if (exitCode !== 0) return fail("Node.js is not installed");
-        const match = stdout.match(/v(\d+)/);
-        const major = match ? parseInt(match[1], 10) : 0;
-        if (major < 18) return fail(`Node >= 18 required (found ${stdout})`);
-        return pass(`Node ${stdout}`);
-      },
-    }),
-
-    check("bun-installed", {
-      run: async (ctx) => {
-        const { stdout, exitCode } = await ctx.run("bun --version");
-        if (exitCode !== 0) return fail("Bun is not installed — https://bun.sh");
-        return pass(`Bun v${stdout}`);
-      },
-    }),
+    nodeVersionCheck(),
+    bunInstalledCheck(),
 
     check("env-file", {
       run: async () => {
@@ -74,7 +26,7 @@ function doctorSteps(): Step[] {
 
     check("database-url", {
       run: async () => {
-        const env = await readEnvFile(dir);
+        const env = await readEnv(dir);
         if (env.has("DATABASE_URL")) return pass("DATABASE_URL set");
         return fail("DATABASE_URL not set in .env");
       },
@@ -91,7 +43,7 @@ function doctorSteps(): Step[] {
           c.connect().then(() => { c.end(); process.exit(0); }).catch(() => process.exit(1));
         `;
         // Try a simpler approach: use node to test the connection
-        const env = await readEnvFile(dir);
+        const env = await readEnv(dir);
         const dbUrl = env.get("DATABASE_URL");
         if (!dbUrl) return fail("DATABASE_URL not set — cannot test connection");
 
@@ -139,15 +91,15 @@ function doctorSteps(): Step[] {
 
     check("auth-config", {
       run: async () => {
-        const env = await readEnvFile(dir);
-        if (!env.has("BETTER_AUTH_SECRET")) {
+        const env = await readEnv(dir);
+        if (!env.get("BETTER_AUTH_SECRET")) {
           return fail("BETTER_AUTH_SECRET not set");
         }
         const providers: string[] = [];
-        if (env.has("GITHUB_CLIENT_ID") && env.has("GITHUB_CLIENT_SECRET")) {
+        if (env.get("GITHUB_CLIENT_ID") && env.get("GITHUB_CLIENT_SECRET")) {
           providers.push("GitHub");
         }
-        if (env.has("GOOGLE_CLIENT_ID") && env.has("GOOGLE_CLIENT_SECRET")) {
+        if (env.get("GOOGLE_CLIENT_ID") && env.get("GOOGLE_CLIENT_SECRET")) {
           providers.push("Google");
         }
         const providerStr = providers.length > 0 ? ` (${providers.join(", ")})` : "";
@@ -155,37 +107,64 @@ function doctorSteps(): Step[] {
       },
     }),
 
-    check("stripe-secret-key", {
-      run: async () => {
-        const env = await readEnvFile(dir);
-        if (env.has("STRIPE_SECRET_KEY")) return pass("STRIPE_SECRET_KEY set");
-        return fail("STRIPE_SECRET_KEY not set");
+    check("stripe", {
+      run: async (ctx) => {
+        const env = await readEnv(dir);
+        const key = env.get("STRIPE_SECRET_KEY");
+        if (!key) return fail("STRIPE_SECRET_KEY not set");
+        if (!env.has("STRIPE_WEBHOOK_SECRET")) return fail("STRIPE_WEBHOOK_SECRET not set");
+
+        // Verify credentials with a lightweight API call
+        const { exitCode, stdout } = await ctx.run(
+          `curl -sf -o /dev/null -w "%{http_code}" https://api.stripe.com/v1/charges?limit=1 -u "${key}:"`,
+        );
+        const status = stdout.trim();
+        if (exitCode !== 0 || status === "401") return fail("Stripe credentials are invalid");
+        if (status !== "200") return fail(`Stripe API returned ${status}`);
+
+        return pass("Stripe connected");
       },
     }),
 
-    check("stripe-webhook-secret", {
-      run: async () => {
-        const env = await readEnvFile(dir);
-        if (env.has("STRIPE_WEBHOOK_SECRET")) return pass("STRIPE_WEBHOOK_SECRET set");
-        return fail("STRIPE_WEBHOOK_SECRET not set");
+    check("resend", {
+      run: async (ctx) => {
+        const env = await readEnv(dir);
+        const key = env.get("RESEND_API_KEY");
+        if (!key) return fail("RESEND_API_KEY not set");
+
+        const { exitCode, stdout } = await ctx.run(
+          `curl -sf -o /dev/null -w "%{http_code}" https://api.resend.com/api-keys -H "Authorization: Bearer ${key}"`,
+        );
+        const status = stdout.trim();
+        if (exitCode !== 0 || status === "401" || status === "403") return fail("Resend API key is invalid");
+        if (status !== "200") return fail(`Resend API returned ${status}`);
+
+        return pass("Resend connected");
       },
     }),
 
-    check("resend-api-key", {
-      run: async () => {
-        const env = await readEnvFile(dir);
-        if (env.has("RESEND_API_KEY")) return pass("RESEND_API_KEY set");
-        return fail("RESEND_API_KEY not set");
-      },
-    }),
-
-    check("storage-config", {
-      run: async () => {
-        const env = await readEnvFile(dir);
-        const required = ["S3_ENDPOINT", "S3_ACCESS_KEY_ID", "S3_SECRET_ACCESS_KEY", "S3_BUCKET", "S3_PUBLIC_URL"];
+    check("storage", {
+      run: async (ctx) => {
+        const env = await readEnv(dir);
+        const required = ["S3_ENDPOINT", "S3_ACCESS_KEY_ID", "S3_SECRET_ACCESS_KEY", "S3_BUCKET"];
         const missing = required.filter((k) => !env.has(k));
-        if (missing.length === 0) return pass("Storage configured");
-        return fail(`Storage missing: ${missing.join(", ")}`);
+        if (missing.length > 0) return fail(`Storage missing: ${missing.join(", ")}`);
+
+        // Verify S3 connectivity with a HEAD bucket request
+        const endpoint = env.get("S3_ENDPOINT")!;
+        const bucket = env.get("S3_BUCKET")!;
+        const accessKey = env.get("S3_ACCESS_KEY_ID")!;
+        const secretKey = env.get("S3_SECRET_ACCESS_KEY")!;
+
+        // An unsigned request to S3/R2 will return 403 (auth required) — that's fine,
+        // it means the endpoint is reachable. Only timeouts/DNS failures mean unreachable.
+        const { stdout } = await ctx.run(
+          `curl -s -o /dev/null -w "%{http_code}" "${endpoint}/${bucket}" --max-time 5 2>/dev/null`,
+        );
+        const status = stdout.trim();
+        if (status === "000") return fail(`S3 endpoint unreachable: ${endpoint}`);
+
+        return pass("Storage reachable");
       },
     }),
   ];
@@ -220,7 +199,7 @@ async function runDoctorPipeline(steps: Step[], ctx: StepContext): Promise<boole
     }
   }
 
-  clack.log.info(`\n${passed}/${passed + failed} checks passed`);
+  clack.log.info(`${passed}/${passed + failed} checks passed`);
   return failed === 0;
 }
 
