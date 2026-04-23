@@ -499,7 +499,7 @@ export function initSteps(baseGetDir: (ctx: StepContext) => string): Step[] {
         const dir = getDir(ctx);
         const { rm } = await import("node:fs/promises");
         await rm(resolve(dir, "src/database/migrations"), { recursive: true, force: true });
-        const { exitCode, stdout } = await ctx.run("bun --env-file .env run db:generate", { cwd: dir });
+        const { exitCode, stdout } = await ctx.run("bun run --env-file .env db:generate", { cwd: dir });
         if (exitCode !== 0) throw new Error(stdout);
       },
     }),
@@ -509,7 +509,7 @@ export function initSteps(baseGetDir: (ctx: StepContext) => string): Step[] {
       when: (ctx) => ctx.flag("skipSetup") !== true,
       run: async (ctx) => {
         const dir = getDir(ctx);
-        const { exitCode, stdout } = await ctx.run("bun --env-file .env run db:migrate", { cwd: dir });
+        const { exitCode, stdout } = await ctx.run("bun run --env-file .env db:migrate", { cwd: dir });
         if (exitCode !== 0) {
           if (stdout.includes("already exists")) {
             ctx.log("Some tables already exist — drop and recreate the database for a clean migration, or run migrations manually.");
@@ -524,7 +524,7 @@ export function initSteps(baseGetDir: (ctx: StepContext) => string): Step[] {
       when: (ctx) => ctx.flag("skipSetup") !== true,
       run: async (ctx) => {
         const dir = getDir(ctx);
-        const { exitCode, stdout } = await ctx.run("bun --env-file .env run db:seed", { cwd: dir });
+        const { exitCode, stdout } = await ctx.run("bun run --env-file .env db:seed", { cwd: dir });
         if (exitCode !== 0) throw new Error(stdout);
       },
     }),
