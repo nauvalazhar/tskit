@@ -561,7 +561,7 @@ export const initCommand: CommandDefinition = {
       lines.push("");
       lines.push("  Next steps:");
       if (needsCd) lines.push(`    cd ${dirName}`);
-      lines.push("    cp .env.example .env     # edit with your values");
+      lines.push("    edit .env                # add DATABASE_URL and service keys");
       lines.push("    bun run db:generate");
       lines.push("    bun run db:migrate");
       lines.push("    bun run db:seed");
