@@ -2,7 +2,7 @@ import { createServerFn } from '@tanstack/react-start';
 import { getRequestHeaders } from '@tanstack/react-start/server';
 import { z } from 'zod';
 import { eq, and } from 'drizzle-orm';
-import { auth } from '@/lib/auth';
+import { auth } from '@/lib/facades/auth';
 import { db } from '@/database';
 import { users, members } from '@/database/schemas/auth';
 import { userSettings } from '@/database/schemas/settings';

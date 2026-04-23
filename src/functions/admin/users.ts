@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { adminMiddleware } from '@/middleware/admin';
 import { usersSearchSchema } from '@/validations/admin';
 import { listUsersAdmin, getUserAdmin } from '@/services/admin/users.service';
-import { auth } from '@/lib/auth';
+import { auth } from '@/lib/facades/auth';
 import { audit } from '@/lib/audit';
 
 const userId = z.uuid();

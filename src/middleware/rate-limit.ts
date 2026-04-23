@@ -1,6 +1,6 @@
 import { createMiddleware } from '@tanstack/react-start';
 import { getRequestIP } from '@tanstack/react-start/server';
-import { rateLimiter } from '@/lib/rate-limit';
+import { rateLimiter } from '@/lib/facades/rate-limit';
 import type { RateLimitRule } from '@/config/rate-limit';
 
 export function createRateLimitMiddleware(rule: RateLimitRule) {

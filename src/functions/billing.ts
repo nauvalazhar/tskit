@@ -9,9 +9,9 @@ import {
   markSubscriptionCanceled,
   updateSubscriptionPlan,
 } from '@/services/subscription.service';
-import { payment } from '@/lib/payment';
+import { payment } from '@/lib/facades/payment';
 import { audit } from '@/lib/audit';
-import { auth } from '@/lib/auth';
+import { auth } from '@/lib/facades/auth';
 import type { PaymentChannel } from '@/config/payment';
 
 const defaultRateLimit = createRateLimitMiddleware('default');

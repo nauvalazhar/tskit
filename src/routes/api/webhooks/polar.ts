@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
-// import { payment } from '@/lib/payment';
-// import { rateLimiter } from '@/lib/rate-limit';
+// import { payment } from '@/lib/facades/payment';
+// import { rateLimiter } from '@/lib/facades/rate-limit';
 // import { handleWebhookEvent } from '@/services/subscription.service';
 import { apiError } from '@/lib/api-response';
 

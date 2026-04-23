@@ -1,6 +1,6 @@
 import { createServerFn } from '@tanstack/react-start';
 import { z } from 'zod';
-import { storage } from '@/lib/storage';
+import { storage } from '@/lib/facades/storage';
 import { UPLOAD_ALLOWED_TYPES } from '@/lib/constants';
 import { authMiddleware } from '@/middleware/auth';
 import { createRateLimitMiddleware } from '@/middleware/rate-limit';

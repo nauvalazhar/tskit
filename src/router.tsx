@@ -6,7 +6,7 @@ import {
 import { routeTree } from './routeTree.gen';
 import { ErrorBoundary } from '@/components/shared/error-boundary';
 import { NotFound } from '@/components/shared/not-found';
-import { captureException } from '@/lib/logger';
+import { captureException } from '@/lib/facades/logger';
 import { QueryClient } from '@tanstack/react-query';
 import { setupRouterSsrQueryIntegration } from '@tanstack/react-router-ssr-query';
 

@@ -9,8 +9,8 @@ import { db } from '@/database';
 import { users, members, organizations } from '@/database/schemas/auth';
 import { userSettings } from '@/database/schemas/settings';
 import { tanstackStartCookies } from 'better-auth/tanstack-start';
-import { mailer } from '@/lib/mailer';
-import { storage } from '@/lib/storage';
+import { mailer } from '@/lib/facades/mailer';
+import { storage } from '@/lib/facades/storage';
 import { customSession } from 'better-auth/plugins';
 import { subscriptions } from '@/database/schemas/billing';
 
@@ -86,7 +86,7 @@ const options = {
         after: async (user) => {
           // Auto-create a personal team for every new user.
           // We use auth.api after auth is initialized (lazy reference via exported `auth`).
-          const { createPersonalTeam } = await import('@/lib/team');
+          const { createPersonalTeam } = await import('@/services/team.service');
           await createPersonalTeam(user.id, user.name);
         },
       },

@@ -1,7 +1,7 @@
 import { createMiddleware } from '@tanstack/react-start';
 import { getRequestHeaders } from '@tanstack/react-start/server';
 import { authMiddleware } from './auth';
-import { auth } from '@/lib/auth';
+import { auth } from '@/lib/facades/auth';
 
 export const orgMiddleware = createMiddleware({ type: 'function' })
   .middleware([authMiddleware])

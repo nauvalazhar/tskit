@@ -5,7 +5,7 @@ import {
   twoFactorClient,
   organizationClient,
 } from 'better-auth/client/plugins';
-import type { auth } from '@/lib/auth';
+import type { auth } from '@/lib/facades/auth';
 
 export const authClient = createAuthClient({
   baseURL: import.meta.env.VITE_APP_URL || 'http://localhost:3000',

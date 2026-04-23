@@ -1,5 +1,5 @@
 import { eq } from 'drizzle-orm';
-import { auth } from '@/lib/auth';
+import { auth } from '@/lib/facades/auth';
 import { db } from '@/database';
 import { sessions } from '@/database/schemas/auth';
 

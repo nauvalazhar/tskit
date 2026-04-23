@@ -1,6 +1,6 @@
 import { createMiddleware } from '@tanstack/react-start';
 import { isRedirect, isNotFound } from '@tanstack/react-router';
-import { requestLogger, captureException } from '@/lib/logger';
+import { requestLogger, captureException } from '@/lib/facades/logger';
 
 export const loggingMiddleware = createMiddleware({ type: 'request' }).server(
   async ({ next, request, pathname }) => {

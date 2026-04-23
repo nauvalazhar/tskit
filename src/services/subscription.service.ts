@@ -6,7 +6,7 @@ import {
   webhookEvents,
 } from '@/database/schemas/billing';
 import { users } from '@/database/schemas/auth';
-import { mailer } from '@/lib/mailer';
+import { mailer } from '@/lib/facades/mailer';
 import { getPlanByExternalPriceId } from './plan.service';
 import type { PaymentChannel } from '@/config/payment';
 import type {

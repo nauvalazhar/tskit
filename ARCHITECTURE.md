@@ -2,18 +2,19 @@
 
 General-purpose SaaS starter kit built on TanStack Start with batteries included.
 
+> For quick reference on patterns and conventions, see `packages/skill/SKILL.md`.
+
 ## Stack
 
 - **Framework:** TanStack Start (React 19, SSR, file-based routing)
-- **Auth:** Better Auth with Drizzle adapter (2FA, email/password, OAuth)
+- **Auth:** Better Auth with Drizzle adapter (2FA, email/password, OAuth, organizations)
 - **Email:** React Email + provider (Resend, SES, or SMTP)
 - **Styling:** Tailwind CSS v4 with OKLCH color system
 - **Components:** Selia UI + CVA (class-variance-authority)
 - **Database:** PostgreSQL + Drizzle ORM
+- **Billing:** Stripe (org-scoped)
 - **Language:** TypeScript (strict mode)
 - **Package Manager:** bun
-
-> **Status key:** Items marked **[Planned]** are designed but not yet implemented.
 
 ---
 
@@ -44,24 +45,32 @@ src/
 │   │   ├── settings.index.tsx       # Profile settings
 │   │   ├── settings.security.tsx    # Security settings (2FA, password)
 │   │   ├── settings.preferences.tsx # User preferences
-│   │   └── settings.advanced.tsx    # Advanced settings (delete account)
+│   │   ├── settings.advanced.tsx    # Advanced settings (delete account)
+│   │   ├── settings.activity.tsx    # Audit activity log
+│   │   ├── settings.team.tsx        # Team settings layout
+│   │   ├── settings.team.index.tsx  # Team general settings
+│   │   └── settings.team.members.tsx # Team member management
 │   ├── admin/                       # Admin layout
 │   │   ├── route.tsx                # Admin layout (role guard)
-│   │   ├── index.tsx                # Dashboard stub
-│   │   ├── users.tsx                # [Planned] User management
-│   │   ├── users.$id.tsx            # [Planned] Single user detail
-│   │   ├── payments.tsx             # [Planned] Payment gateway config
-│   │   └── settings.tsx             # [Planned] Site-wide settings
+│   │   ├── index.tsx                # Admin dashboard overview
+│   │   ├── users.index.tsx          # User management
+│   │   ├── users.$userId.tsx        # Single user detail
+│   │   ├── teams.index.tsx          # Team management
+│   │   ├── teams.$teamId.tsx        # Single team detail
+│   │   ├── plans.index.tsx          # Plan management
+│   │   ├── plans.create.tsx         # Create plan
+│   │   ├── plans.$planId.tsx        # Edit plan
+│   │   ├── subscriptions.tsx        # Subscription management
+│   │   └── audit.tsx                # Audit log viewer
 │   └── api/
 │       ├── auth.$.ts                # Better Auth handler
 │       └── webhooks/
 │           └── stripe.ts            # POST /api/webhooks/stripe
 │
 ├── components/                      # All UI components
-│   ├── selia/                       # Design system (27 components)
+│   ├── selia/                       # Design system
 │   ├── app/                         # App shell
-│   │   ├── app-sidebar.tsx
-│   │   └── email-verification-banner.tsx
+│   │   └── app-sidebar.tsx
 │   ├── auth/                        # Auth forms
 │   │   ├── login-form.tsx
 │   │   ├── signup-form.tsx
@@ -84,12 +93,30 @@ src/
 │   │   ├── change-plan-button.tsx
 │   │   ├── manage-button.tsx
 │   │   └── subscription-status.tsx
-│   ├── dashboard/                   # [Planned]
-│   ├── admin/                       # [Planned]
+│   ├── admin/                       # Admin panel components
+│   │   ├── admin-sidebar.tsx
+│   │   ├── overview-stats.tsx
+│   │   ├── recent-activity.tsx
+│   │   ├── users-table.tsx
+│   │   ├── user-profile.tsx
+│   │   ├── user-accounts.tsx
+│   │   ├── user-actions.tsx
+│   │   ├── user-subscription.tsx
+│   │   ├── user-teams.tsx
+│   │   ├── teams-table.tsx
+│   │   ├── plans-table.tsx
+│   │   ├── plan-form.tsx
+│   │   ├── plan-prices-editor.tsx
+│   │   ├── entitlements-editor.tsx
+│   │   ├── change-plan-dialog.tsx
+│   │   ├── subscriptions-table.tsx
+│   │   └── audit-log-table.tsx
 │   └── shared/
 │       ├── page-header.tsx
 │       ├── tabline.tsx
 │       ├── user-avatar.tsx
+│       ├── user-menu.tsx
+│       ├── data-pagination.tsx
 │       ├── error-boundary.tsx       # ErrorBoundary (styled error page)
 │       ├── not-found.tsx            # Styled 404 page
 │       ├── dev-error-overlay.tsx
@@ -99,14 +126,13 @@ src/
 │   ├── plan.service.ts
 │   ├── subscription.service.ts
 │   ├── usage.service.ts
-│   ├── api-key.service.ts           # [Planned]
-│   ├── webhook.service.ts           # [Planned]
-│   ├── file.service.ts              # [Planned]
-│   └── settings.service.ts          # [Planned]
-│
-├── jobs/                            # [Planned] Background job handlers
-│   ├── webhook-delivery.job.ts      # [Planned]
-│   └── email-send.job.ts            # [Planned]
+│   ├── audit.service.ts
+│   └── admin/
+│       ├── overview.service.ts
+│       ├── users.service.ts
+│       ├── teams.service.ts
+│       ├── plans.service.ts
+│       └── subscriptions.service.ts
 │
 ├── emails/                          # React Email templates (server-only)
 │   ├── verify-email.tsx             # Email verification OTP
@@ -114,70 +140,89 @@ src/
 │   ├── password-changed.tsx         # Password change notification
 │   ├── subscription-created.tsx     # Subscription confirmation
 │   ├── payment-failed.tsx           # Payment failure alert
-│   ├── welcome.tsx                  # [Planned]
-│   ├── invitation.tsx               # [Planned]
+│   ├── team-invitation.tsx          # Team invitation
 │   └── index.ts                     # template type map (inferred)
 │
 ├── queries/                         # TanStack Query options
 │   ├── billing.queries.ts
-│   └── admin.queries.ts             # [Planned]
+│   ├── team.queries.ts
+│   ├── audit.queries.ts
+│   └── admin/
+│       ├── overview.queries.ts
+│       ├── users.queries.ts
+│       ├── teams.queries.ts
+│       ├── plans.queries.ts
+│       ├── subscriptions.queries.ts
+│       └── audit.queries.ts
 │
 ├── functions/                       # Server functions (RPC boundary)
 │   ├── auth.ts                      # getSession, listUserAccounts
 │   ├── billing.ts                   # checkout, plans, subscription, cancel
 │   ├── settings.ts                  # updateProfile, updateTheme, deleteAccount
 │   ├── storage.ts                   # uploadAvatar
-│   └── admin/                       # [Planned]
-│       ├── users.ts                 # [Planned]
-│       └── payments.ts              # [Planned]
+│   ├── team.ts                      # team management
+│   ├── audit.ts                     # audit log queries
+│   └── admin/
+│       ├── overview.ts
+│       ├── users.ts
+│       ├── teams.ts
+│       ├── plans.ts
+│       ├── subscriptions.ts
+│       └── audit.ts
 │
 ├── hooks/                           # Shared React hooks
 │   ├── use-email-verified.ts
 │   └── use-subscription.ts
 │
-├── validation/                      # [Planned] Shared zod schemas
+├── validations/                     # Shared zod schemas
+│   ├── admin.ts
+│   ├── audit.ts
+│   └── team.ts
 │
 ├── middleware/                       # Server function & request middleware
 │   ├── auth.ts                      # authMiddleware
+│   ├── org.ts                       # orgMiddleware (active organization)
+│   ├── admin.ts                     # adminMiddleware (admin role)
 │   ├── email-verified.ts            # emailVerifiedMiddleware
 │   ├── subscribed.ts                # subscribedMiddleware (active subscription)
-│   ├── logging.ts                   # Request logging + serverFnErrorMiddleware
-│   └── admin.ts                     # [Planned] adminMiddleware
+│   ├── rate-limit.ts                # createRateLimitMiddleware
+│   ├── security-headers.ts          # Security headers
+│   └── logging.ts                   # Request logging + serverFnErrorMiddleware
 │
 ├── config/                          # Named channels — env vars read here
 │   ├── features.ts                  # Feature registry (entitlement keys)
 │   ├── storage.ts                   # channels: driver + bucket + credentials
 │   ├── mail.ts                      # channels: driver + apiKey + from
-│   └── payment.ts                   # channels: driver + secretKey + webhookSecret
+│   ├── payment.ts                   # channels: driver + secretKey + webhookSecret
+│   ├── rate-limit.ts                # rate limit rules
+│   └── define-config.ts             # Config definition helpers
 │
-├── lib/                             # App-level helpers — facades over core/
+├── lib/                             # App-level code — facades + shared helpers
+│   ├── facades/                     # Config → driver wiring (server-only, import via functions/)
+│   │   ├── auth.ts                  # Better Auth server instance
+│   │   ├── storage.ts               # storage.use('public').upload(), storage.upload()
+│   │   ├── mailer.ts                # mailer.send(), mailer.use('resend').send()
+│   │   ├── payment.ts               # payment.checkout(), payment.portal()
+│   │   ├── rate-limit.ts            # rateLimiter.use('auth').check()
+│   │   └── logger.ts               # Pino + captureException() + child loggers
 │   ├── auth-client.ts               # Better Auth client instance
-│   ├── auth.ts                      # Better Auth server instance
+│   ├── audit.ts                     # audit.log() — request-context enrichment over audit service
 │   ├── entitlements.ts              # hasFeature(), withinLimit(), requireLimit()
-│   ├── storage.ts                   # storage.use('public').upload(), storage.upload()
-│   ├── mailer.ts                    # mailer.send(), mailer.use('resend').send()
-│   ├── payment.ts                   # payment.checkout(), payment.portal()
+│   ├── audit-labels.ts              # Human-readable audit action labels
 │   ├── api-response.ts              # apiError(), apiSuccess() for API routes
-│   ├── logger.ts                    # Pino + captureException() + child loggers
 │   ├── http.ts                      # HTTP helpers
 │   ├── theme.ts                     # Theme utilities
 │   ├── utils.ts                     # cn() and shared helpers
-│   ├── constants.ts                 # App-wide constants
-│   ├── queue.ts                     # [Planned] queue.add()
-│   └── rate-limit.ts                # [Planned] rateLimit.check()
+│   └── constants.ts                 # App-wide constants
 │
 ├── database/                        # DB client, schemas, migrations
 │   ├── index.ts                     # DB client (drizzle instance)
 │   ├── seed.ts                      # Development seed script
-│   ├── schemas/
-│   │   ├── auth.ts                  # user, session, account, verification
-│   │   ├── billing.ts               # plans, customers, subscriptions, usage, webhookEvents
-│   │   ├── settings.ts              # User settings
-│   │   ├── api-key.ts               # [Planned] API keys table
-│   │   ├── webhook-endpoint.ts      # [Planned] outgoing webhook endpoints
-│   │   ├── file.ts                  # [Planned] files table
-│   │   └── site-settings.ts         # [Planned] site_settings table
-│   └── migrations/
+│   └── schemas/
+│       ├── auth.ts                  # user, session, account, verification, organization, member, invitation
+│       ├── billing.ts               # plans, planPrices, customers, subscriptions, usage, webhookEvents
+│       ├── settings.ts              # User settings
+│       └── audit.ts                 # Audit logs
 │
 ├── core/                            # Foundational — portable, app-agnostic
 │   └── drivers/
@@ -194,10 +239,10 @@ src/
 │       │   ├── index.ts             # driver registry + createStorageDriver()
 │       │   ├── base.ts              # BaseStorageDriver abstract class
 │       │   └── s3.ts                # S3StorageDriver (R2, S3, MinIO, etc.)
-│       └── queue/                   # [Planned]
-│           ├── types.ts             # [Planned]
-│           ├── index.ts             # [Planned]
-│           └── bullmq.ts            # [Planned]
+│       └── rate-limit/
+│           ├── types.ts             # RateLimitDriver interface
+│           ├── index.ts             # driver registry + createRateLimitDriver()
+│           └── memory.ts            # In-memory rate limit driver
 │
 ├── router.tsx
 ├── routeTree.gen.ts                 # Auto-generated (read-only)
@@ -210,28 +255,30 @@ src/
 
 ```
 routes → components → queries → functions → services  → database/
-                                           → lib/*     → core/drivers
-                                middleware ↗
+                                           → lib/facades/ → core/drivers
+                              middleware ↗
+         ↘ validations/ ← (importable by all layers, no app imports)
+         ↘ lib/* (non-facades) ← (importable by all layers)
 ```
 
-| Layer         | Responsibility                                                                       |
-| ------------- | ------------------------------------------------------------------------------------ |
-| `routes/`     | Thin page shells. Loader calls `ensureQueryData`, renders components. Minimal logic. |
-| `components/` | All UI, grouped by domain.                                                           |
-| `queries/`    | TanStack Query options. Bridges client to server via `functions/`.                   |
-| `functions/`  | Server functions (RPC boundary). Validation, orchestration. Calls services.          |
-| `middleware/` | Auth, role checks, logging. Attaches to server functions via `.middleware()`.        |
-| `services/`   | Business logic + DB queries via Drizzle.                                             |
-| `emails/`     | React Email templates. Each file exports `subject` + default component. Server-only. |
-| `database/`   | DB client + Drizzle schemas + migrations. App-specific data model.                   |
-| `config/`     | Named channels. Pairs a driver with credentials + settings. Reads env vars.            |
-| `lib/`        | App-level facades over `core/`. The daily-driver imports.                            |
-| `core/`       | Driver classes — know _how_ (S3, Resend) but not _where_. Config-injected.           |
-| `hooks/`      | Shared React hooks.                                                                  |
-| `jobs/`       | **[Planned]** Background job handlers. Async work triggered by services.             |
-| `validation/` | **[Planned]** Shared zod schemas.                                                    |
+| Layer          | Responsibility                                                                       |
+| -------------- | ------------------------------------------------------------------------------------ |
+| `routes/`      | Thin page shells. Loader calls `ensureQueryData`, renders components. Minimal logic. |
+| `components/`  | All UI, grouped by domain.                                                           |
+| `queries/`     | TanStack Query options. Bridges client to server via `functions/`.                   |
+| `functions/`   | Server functions (RPC boundary). Validation, orchestration. Calls services.          |
+| `middleware/`  | Auth, org, admin, rate-limit, logging. Attaches to server functions via `.middleware()`. |
+| `services/`    | Business logic + DB queries via Drizzle.                                             |
+| `emails/`      | React Email templates. Each file exports `subject` + default component. Server-only. |
+| `database/`    | DB client + Drizzle schemas + migrations. App-specific data model.                   |
+| `validations/` | Shared zod schemas. Leaf dependency — no imports from app code.                      |
+| `config/`      | Named channels. Pairs a driver with credentials + settings. Reads env vars.          |
+| `lib/facades/` | Config-to-driver wiring (storage, mailer, payment, etc.). Never import in components.|
+| `lib/*`        | Shared app code importable anywhere (auth-client, entitlements, utils, constants).   |
+| `core/`        | Driver classes — know _how_ (S3, Resend) but not _where_. Config-injected.           |
+| `hooks/`       | Shared React hooks.                                                                  |
 
-### core/ vs lib/
+### core/ vs lib/facades/
 
 `config/` defines named channels — each pairs a driver name with its credentials
 and settings. Env vars are read here, never in driver classes.
@@ -239,8 +286,12 @@ and settings. Env vars are read here, never in driver classes.
 `core/` contains driver classes — they know _how_ to talk to S3 or Resend, but not _where_.
 They receive config via constructor injection. Portable and app-agnostic.
 
-`lib/` is the app-level facade — resolves config → creates drivers, caches instances.
-This is what you import day-to-day: `lib/auth`, `lib/storage`, `lib/mailer`, `lib/payment`.
+`lib/facades/` is the app-level facade layer — resolves config → creates drivers, caches
+instances. Import these in server-side code (services, functions, middleware), never in
+components: `lib/facades/auth`, `lib/facades/storage`, `lib/facades/mailer`, `lib/facades/payment`.
+
+Everything else in `lib/` (auth-client, entitlements, utils, constants, etc.) is shared
+app code that can be imported anywhere.
 
 Each facade **transforms the interface** — it takes app-level params and resolves them
 to driver-level params. The driver never sees templates, scopes, userIds, or planIds.
@@ -253,7 +304,7 @@ const driver = createStorageDriver(storageConfig.channels.public);
 await driver.upload({ buffer, key: 'avatars/photo.png', contentType });
 
 // ✅ Clean — use the lib facade
-import { storage } from '@/lib/storage';
+import { storage } from '@/lib/facades/storage';
 await storage.upload('avatars', { buffer, contentType, name: 'photo.png' });
 
 // ✅ Explicit channel selection
@@ -266,25 +317,26 @@ The same applies to all facades:
 |--------|-----------------|------------------|------------------------|
 | `mailer` | `send(template, to, data)` | template name → rendered HTML + subject | `driver.send({ to, subject, html })` |
 | `storage` | `upload(scope, file)` | scope + filename → UUID-based key | `driver.upload({ buffer, key, contentType })` |
-| `payment` | `checkout(userId, planId, urls)` | userId → customer, planId → priceId | `driver.createCheckout({ customerId, priceId, ... })` |
+| `payment` | `checkout(orgId, planId, urls)` | orgId → customer, planId → priceId | `driver.createCheckout({ customerId, priceId, ... })` |
 
 ---
 
 ## Import Rules
 
-Import from `lib/` for daily use, from `core/` only when configuring infrastructure.
+Import facades from `lib/facades/` in server-side code. Import shared helpers from `lib/` anywhere.
+Never import from `core/` or `config/` directly — use facades or shared helpers.
 
 ```ts
 // ✅ Auth middleware in server functions
 import { authMiddleware } from '@/middleware/auth';
 
-// ✅ Auth client in components
+// ✅ Auth client in components (lib/ root — importable anywhere)
 import { authClient } from '@/lib/auth-client';
 
-// ✅ Facades in services and server functions
-import { storage } from '@/lib/storage';
-import { mailer } from '@/lib/mailer';
-import { payment } from '@/lib/payment';
+// ✅ Facades in services and server functions (lib/facades/ — never in components)
+import { storage } from '@/lib/facades/storage';
+import { mailer } from '@/lib/facades/mailer';
+import { payment } from '@/lib/facades/payment';
 
 // ✅ Schemas — always import directly (no facade needed)
 import { plans } from '@/database/schemas/billing';
@@ -297,7 +349,7 @@ import { db } from '@/database';
 import { getPlans } from '@/functions/billing';
 
 // ✅ Services in server functions (named exports, domain-prefixed)
-import { getSubscriptionByUserId } from '@/services/subscription.service';
+import { getSubscriptionByOrganizationId } from '@/services/subscription.service';
 import { listPlans, getPlanById } from '@/services/plan.service';
 
 // ✅ Entitlement checks
@@ -316,7 +368,7 @@ to the client. The framework provides runtime guards:
 - **`createServerOnlyFn`** — crashes if called from client
 - **`VITE_` prefix** — only way to expose env vars to client
 
-Services, `lib/` facades, `core/` drivers, and DB code must always be called through
+Services, `lib/facades/` code, `core/` drivers, and DB code must always be called through
 `createServerFn` or `createServerOnlyFn` wrappers in `functions/`. Never call them
 directly from components.
 
@@ -456,7 +508,7 @@ Client and server have different concerns:
 |            | Error feedback                 | Error tracking              | Structured logging     |
 | ---------- | ------------------------------ | --------------------------- | ---------------------- |
 | **Client** | Alert / Toast / error boundary | `captureException` (no-op)  | Don't                  |
-| **Server** | —                              | `captureException` → Pino   | Pino (`lib/logger.ts`) |
+| **Server** | —                              | `captureException` → Pino   | Pino (`lib/facades/logger.ts`) |
 
 ### Logger (Server-Only)
 
@@ -464,7 +516,7 @@ Pino for structured logging. Server-only — it writes to stdout. Don't import i
 components or client code. Sensitive fields are redacted automatically.
 
 ```ts
-// lib/logger.ts
+// lib/facades/logger.ts
 
 import pino from 'pino';
 import { createIsomorphicFn } from '@tanstack/react-start';
@@ -483,14 +535,11 @@ export const requestLogger = logger.child({ domain: 'request' });
 export const authLogger = logger.child({ domain: 'auth' });
 ```
 
-Use it in services, jobs, middleware, and API routes:
+Use it in services, middleware, and API routes:
 
 ```ts
 // In a service
 logger.info({ orgId, event: 'subscription.created' }, 'Webhook processed');
-
-// In a job
-logger.error({ err, jobId }, 'Webhook delivery failed');
 
 // In an API route
 logger.warn({ ip, key: prefix }, 'Rate limit exceeded');
@@ -502,7 +551,7 @@ logger.warn({ ip, key: prefix }, 'Rate limit exceeded');
 It's wrapped with `createIsomorphicFn` — logs via Pino on the server, no-op on the client.
 
 ```ts
-// lib/logger.ts
+// lib/facades/logger.ts
 
 export const captureException = createIsomorphicFn().server(
   (err: unknown, context?: Record<string, unknown>) => {
@@ -529,7 +578,7 @@ for routing logs to external services (Axiom, Datadog, Logtail, etc.). This is
 deploy-time configuration — not a runtime provider switch:
 
 ```ts
-// lib/logger.ts (production with transport)
+// lib/facades/logger.ts (production with transport)
 
 import pino from 'pino';
 
@@ -555,7 +604,7 @@ configured once at deploy time, not switched at runtime via admin panel.
 
 Auth checks live in `middleware/` and attach to server functions via `.middleware()`.
 This replaces imperative `requireAuth()` calls — auth runs before the handler, and
-the authenticated user/member is available via `context`.
+the authenticated user/organization/subscription is available via `context`.
 
 ### Auth Middleware
 
@@ -563,34 +612,121 @@ the authenticated user/member is available via `context`.
 // middleware/auth.ts
 
 import { createMiddleware } from '@tanstack/react-start';
+import { getRequestHeaders } from '@tanstack/react-start/server';
 import { redirect } from '@tanstack/react-router';
-import { auth } from '@/lib/auth';
+import { auth } from '@/lib/facades/auth';
 
 export const authMiddleware = createMiddleware({ type: 'function' }).server(
   async ({ next }) => {
-    const session = await auth.api.getSession({ headers: getHeaders() });
+    const headers = await getRequestHeaders();
+    const session = await auth.api.getSession({ headers });
     if (!session) throw redirect({ to: '/login' });
     return next({ context: { user: session.user } });
   },
 );
-
-// [Planned] orgRoleMiddleware — will be added when org plugin UI is implemented
 ```
 
-### Admin Middleware [Planned]
+### Org Middleware
+
+Chains after `authMiddleware` and resolves the user's active organization:
 
 ```ts
-// middleware/admin.ts — [Planned]
+// middleware/org.ts
 
 import { createMiddleware } from '@tanstack/react-start';
+import { getRequestHeaders } from '@tanstack/react-start/server';
 import { authMiddleware } from './auth';
+import { auth } from '@/lib/facades/auth';
+
+export const orgMiddleware = createMiddleware({ type: 'function' })
+  .middleware([authMiddleware])
+  .server(async ({ next }) => {
+    const headers = await getRequestHeaders();
+    const activeOrg = await auth.api.getFullOrganization({ headers });
+
+    if (!activeOrg) {
+      throw new Error('No active organization');
+    }
+
+    return next({ context: { organization: activeOrg } });
+  });
+```
+
+### Admin Middleware
+
+Chains `authMiddleware` (with rate limiting) and checks for admin role:
+
+```ts
+// middleware/admin.ts
+
+import { createMiddleware } from '@tanstack/react-start';
+import { redirect } from '@tanstack/react-router';
+import { authMiddleware } from './auth';
+import { createRateLimitMiddleware } from './rate-limit';
+
+const adminRateLimit = createRateLimitMiddleware('admin');
 
 export const adminMiddleware = createMiddleware({ type: 'function' })
-  .middleware([authMiddleware])
+  .middleware([adminRateLimit, authMiddleware])
   .server(async ({ next, context }) => {
-    if (context.user.role !== 'admin') throw new Error('Forbidden');
+    if (context.user.role !== 'admin') {
+      throw redirect({ to: '/dashboard' });
+    }
+
+    return next({ context: { user: context.user } });
+  });
+```
+
+### Subscribed Middleware
+
+Chains after `orgMiddleware` and loads the organization's active subscription:
+
+```ts
+// middleware/subscribed.ts
+
+import { createMiddleware } from '@tanstack/react-start';
+import { orgMiddleware } from './org';
+import { getSubscriptionByOrganizationId } from '@/services/subscription.service';
+
+export const subscribedMiddleware = createMiddleware({ type: 'function' })
+  .middleware([orgMiddleware])
+  .server(async ({ next, context }) => {
+    const subscription = await getSubscriptionByOrganizationId(context.organization.id);
+
+    if (!subscription || !['active', 'trialing'].includes(subscription.status)) {
+      throw new Error('Active subscription required');
+    }
+
+    return next({ context: { subscription } });
+  });
+```
+
+### Rate Limit Middleware
+
+Factory function that creates rate limit middleware for a given rule:
+
+```ts
+// middleware/rate-limit.ts
+
+import { createMiddleware } from '@tanstack/react-start';
+import { getRequestIP } from '@tanstack/react-start/server';
+import { rateLimiter } from '@/lib/facades/rate-limit';
+import type { RateLimitRule } from '@/config/rate-limit';
+
+export function createRateLimitMiddleware(rule: RateLimitRule) {
+  return createMiddleware({ type: 'function' }).server(async ({ next }) => {
+    const ip = getRequestIP({ xForwardedFor: true }) || 'unknown';
+    const key = `${rule}:${ip}`;
+
+    const result = await rateLimiter.use(rule).check(key);
+
+    if (!result.allowed) {
+      throw new Error('Too many requests. Please try again later.');
+    }
+
     return next();
   });
+}
 ```
 
 ### Logging Middleware
@@ -603,7 +739,7 @@ Redirects and not-founds are skipped — they're normal control flow, not errors
 
 import { createMiddleware } from '@tanstack/react-start';
 import { isRedirect, isNotFound } from '@tanstack/react-router';
-import { requestLogger, captureException } from '@/lib/logger';
+import { requestLogger, captureException } from '@/lib/facades/logger';
 
 export const loggingMiddleware = createMiddleware({ type: 'request' }).server(
   async ({ next, request, pathname }) => {
@@ -659,16 +795,24 @@ export const startInstance = createStart(() => ({
 }));
 ```
 
+### Middleware Chain Order
+
+Chain order matters. The standard chains are:
+
+- `auth → org → subscribed` — for billing/subscription functions
+- `rateLimit → auth → admin` — for admin functions
+- `auth` alone — for functions that only need the user
+
 ### Usage
 
 ```ts
 // functions/billing.ts — attach middleware, use context
 
 export const createCheckout = createServerFn({ method: 'POST' })
-  .middleware([authMiddleware])
+  .middleware([orgMiddleware])
   .validator(checkoutSchema)
   .handler(async ({ data, context }) => {
-    // context.user is guaranteed by middleware
+    // context.user + context.organization guaranteed by middleware
     const plan = await getPlanById(data.planId);
     if (!plan) throw notFound();
     // ...
@@ -679,7 +823,7 @@ export const createCheckout = createServerFn({ method: 'POST' })
 export const cancelSubscription = createServerFn({ method: 'POST' })
   .middleware([subscribedMiddleware])
   .handler(async ({ context }) => {
-    // context.user + context.subscription guaranteed
+    // context.user + context.organization + context.subscription guaranteed
     // ...
   });
 ```
@@ -695,7 +839,7 @@ with a scoped key on the default disk").
 ### Storage
 
 ```ts
-// lib/storage.ts
+// lib/facades/storage.ts
 
 import { storageConfig } from '@/config/storage';
 import { createStorageDriver } from '@/core/drivers/storage';
@@ -738,7 +882,7 @@ in `emails/` exports a `subject` and a `Body` component. The mailer resolves the
 by name, renders it, and sends via the configured email driver.
 
 ```ts
-// lib/mailer.ts
+// lib/facades/mailer.ts
 
 import { mailConfig } from '@/config/mail';
 import { createEmailDriver } from '@/core/drivers/email';
@@ -774,109 +918,64 @@ export const mailer = new Mailer();
 // await mailer.use("transactional").send("reset-password", user.email, { name: user.name, url: resetUrl });
 ```
 
-### Queue [Planned]
+### Rate Limiter
+
+The rate limiter follows the Config → Driver → Facade pattern. Rules are defined in
+`config/rate-limit.ts`, the driver (currently in-memory) lives in `core/drivers/rate-limit/`,
+and the facade in `lib/facades/rate-limit.ts` provides the daily-driver API.
 
 ```ts
-// lib/queue.ts — [Planned]
+// lib/facades/rate-limit.ts
 
-import {
-  getActiveQueueProvider,
-  getQueueProvider,
-} from '@/core/drivers/queue';
-import type { EmailTemplates } from '@/emails';
+import { rateLimitConfig, type RateLimitRule } from '@/config/rate-limit';
+import { createRateLimitDriver } from '@/core/drivers/rate-limit';
+import type { RateLimitDriver, RateLimitResult } from '@/core/drivers/rate-limit/types';
 
-type Jobs = {
-  'webhook.deliver': {
-    endpointId: string;
-    event: string;
-    payload: unknown;
-    secret: string;
-    url: string;
-  };
-  'email.send': {
-    template: keyof EmailTemplates;
-    to: string;
-    data: Record<string, unknown>;
-  };
-  'usage.reset': { orgId: string };
-};
+class RateLimiter {
+  private driver: RateLimitDriver | undefined;
+  private rule: RateLimitRule | undefined;
 
-class Queue {
-  private pinnedProvider?: string;
+  use(name: RateLimitRule): RateLimiter { /* scoped copy */ }
 
-  private async resolve() {
-    return this.pinnedProvider
-      ? getQueueProvider(this.pinnedProvider)
-      : await getActiveQueueProvider();
+  async check(key: string, rule?: RateLimitRule): Promise<RateLimitResult> {
+    const r = this.resolveRule(rule);
+    return this.resolveDriver().check(key, r.maxRequests, r.windowMs);
   }
 
-  using(provider: string): Queue {
-    const scoped = new Queue();
-    scoped.pinnedProvider = provider;
-    return scoped;
-  }
-
-  async add<T extends keyof Jobs>(job: T, data: Jobs[T]) {
-    const p = await this.resolve();
-    return p.add(job, data);
-  }
+  async reset(key: string): Promise<void> { ... }
 }
 
-export const queue = new Queue();
+export const rateLimiter = new RateLimiter();
 
-// Default (uses active provider from settings):
-// await queue.add("email.send", { template: "welcome", to: user.email, data: { name: user.name } });
-//
-// Override inline:
-// await queue.using("bullmq").add("email.send", { ... });
-```
-
-### Rate Limit [Planned]
-
-```ts
-// lib/rate-limit.ts — [Planned]
-
-import { usageService } from '@/services/usage.service';
-import { RateLimitExceededError } from '@/lib/errors';
-
-class RateLimit {
-  async check(orgId: string, metric: string) {
-    const plan = await getOrgPlan(orgId);
-    const limit = plan.limits?.[metric];
-    if (!limit) return;
-
-    const current = await usageService.getCurrentPeriod(orgId, metric);
-    if (current >= limit) {
-      throw new RateLimitExceededError(metric, limit);
-    }
-  }
-}
-
-export const rateLimit = new RateLimit();
+// Usage:
+// await rateLimiter.use('auth').check(`login:${ip}`);
 ```
 
 ---
 
 ## Config / Driver / Channel Pattern
 
-Storage and email follow a **config → driver → facade** pattern (inspired by Laravel):
+Storage, email, payment, and rate limiting follow a **config → driver → facade** pattern (inspired by Laravel):
 
 1. **`config/*.ts`** — defines named **channels**: driver name + credentials + settings. Env vars are read here, never in drivers.
-2. **`core/drivers/*/types.ts`** — driver interface (`StorageDriver`, `EmailDriver`)
-3. **`core/drivers/*/base.ts`** — abstract base class with shared behavior
+2. **`core/drivers/*/types.ts`** — driver interface (`StorageDriver`, `EmailDriver`, `RateLimitDriver`)
+3. **`core/drivers/*/base.ts`** — abstract base class with shared behavior (where applicable)
 4. **`core/drivers/*/<driver>.ts`** — concrete driver class, receives config via constructor
 5. **`core/drivers/*/index.ts`** — driver registry: maps driver names to factory functions
-6. **`lib/*.ts`** — facade: resolves config → creates drivers, caches instances
+6. **`lib/facades/*.ts`** — facade: resolves config → creates drivers, caches instances
 
-Consumers don't import from `core/drivers/` or `config/` directly — they use the `lib/` facades.
+Consumers don't import from `core/drivers/` or `config/` directly — they use the `lib/facades/` layer.
 
 ```
 config/storage.ts          →  defines channels (driver + bucket + credentials + publicUrl + prefix)
 config/mail.ts             →  defines channels (driver + apiKey + from)
+config/rate-limit.ts       →  defines rules (maxRequests + windowMs)
 core/drivers/storage/    →  driver classes (S3StorageDriver) — config-injected, no env vars
 core/drivers/email/      →  driver classes (ResendEmailDriver) — config-injected, no env vars
-lib/storage.ts             →  facade: storage.use('public').upload(file)
-lib/mailer.ts              →  facade: mailer.send(template, to, data)
+core/drivers/rate-limit/ →  driver classes (MemoryRateLimitDriver) — config-injected, no env vars
+lib/facades/storage.ts      →  facade: storage.use('public').upload(file)
+lib/facades/mailer.ts       →  facade: mailer.send(template, to, data)
+lib/facades/rate-limit.ts   →  facade: rateLimiter.use('auth').check(key)
 ```
 
 ### Why classes (not plain objects)
@@ -914,7 +1013,7 @@ await storage.use('videos').upload({ buffer, key: 'intro.mp4', contentType: 'vid
 
 Payment follows the same Config → Driver → Facade pattern as email and storage.
 The driver knows _how_ to talk to Stripe (raw API calls with `customerId`, `priceId`).
-The facade knows _what_ the app needs (resolves `userId` → customer, `planId` → price).
+The facade knows _what_ the app needs (resolves `orgId` → customer, `planId` → price).
 
 ### Config
 
@@ -957,7 +1056,7 @@ export interface PaymentDriver {
 ```
 
 The driver interface uses **provider-level params** — `customerId`, `priceId`, raw
-Stripe IDs. It doesn't know about `userId` or `planId`. This keeps it portable.
+Stripe IDs. It doesn't know about `orgId` or `planId`. This keeps it portable.
 
 Normalized `WebhookEventType`:
 - `subscription.created` / `subscription.updated` / `subscription.deleted`
@@ -989,7 +1088,7 @@ The facade bridges app-level concepts to driver-level params — just like
 `mailer` resolves templates → HTML and `storage` resolves scopes → keys.
 
 ```ts
-// lib/payment.ts
+// lib/facades/payment.ts
 
 class Payment {
   private drivers = new Map<string, PaymentDriver>();
@@ -998,19 +1097,19 @@ class Payment {
   private resolve(): PaymentDriver { /* lazy init + cache from paymentConfig */ }
   use(name: string): Payment { /* scoped copy */ }
 
-  // App-level: takes userId, resolves to Stripe customer (creates if needed)
-  async getOrCreateCustomer(userId: string) {
+  // App-level: takes orgId, resolves to Stripe customer (creates if needed)
+  async getOrCreateCustomer(organizationId: string) {
     const existing = await db.query.customers.findFirst({ ... });
     if (existing) return existing;
 
-    const user = await db.query.users.findFirst({ ... });
-    const result = await this.resolve().createCustomer({ email: user.email, name: user.name });
-    return db.insert(customers).values({ userId, channel, externalCustomerId: result.id });
+    const org = await db.query.organizations.findFirst({ ... });
+    const result = await this.resolve().createCustomer({ email: org.email, name: org.name });
+    return db.insert(customers).values({ organizationId, channel, externalCustomerId: result.id });
   }
 
-  // App-level: takes userId + planId, resolves both, delegates to driver
-  async checkout(userId: string, planId: string, urls: { success; cancel }) {
-    const customer = await this.getOrCreateCustomer(userId);
+  // App-level: takes orgId + planId, resolves both, delegates to driver
+  async checkout(organizationId: string, planId: string, urls: { success; cancel }) {
+    const customer = await this.getOrCreateCustomer(organizationId);
     const plan = await getPlanById(planId);
     return this.resolve().createCheckout({
       customerId: customer.externalCustomerId,
@@ -1020,9 +1119,9 @@ class Payment {
     });
   }
 
-  // App-level: takes userId, resolves to customer, delegates to driver
-  async portal(userId: string, returnUrl: string) {
-    const customer = await this.getOrCreateCustomer(userId);
+  // App-level: takes orgId, resolves to customer, delegates to driver
+  async portal(organizationId: string, returnUrl: string) {
+    const customer = await this.getOrCreateCustomer(organizationId);
     return this.resolve().createPortalSession({
       customerId: customer.externalCustomerId,
       returnUrl,
@@ -1116,27 +1215,55 @@ requireLimit(plan.entitlements, 'projects', 5); // throws if over limit
 
 ### Usage Tracking
 
-The `usage` table tracks per-user consumption against quotas. One record per user
-per feature. `usage.service.ts` handles increment/decrement/reset with lazy period
-reset — if the period has expired, usage resets automatically on next read.
+The `usage` table tracks per-organization consumption against quotas. One record per
+organization per feature. `usage.service.ts` handles increment/decrement/reset with lazy
+period reset — if the period has expired, usage resets automatically on next read.
+
+```ts
+// services/usage.service.ts
+
+export async function getUsageCount(
+  organizationId: string,
+  featureKey: string,
+  period: Period,
+): Promise<number> {
+  const record = await db.query.usage.findFirst({
+    where: and(eq(usage.organizationId, organizationId), eq(usage.featureKey, featureKey)),
+  });
+  if (!record) return 0;
+  // Lazy period reset: if expired, reset usage
+  if (record.periodEnd < new Date()) { /* reset and return 0 */ }
+  return record.used;
+}
+
+export async function incrementUsage(
+  organizationId: string,
+  featureKey: string,
+  period: Period,
+  amount = 1,
+): Promise<void> { /* upsert usage record */ }
+
+export async function decrementUsage(organizationId: string, featureKey: string, amount = 1): Promise<void> { ... }
+export async function resetUsage(organizationId: string, featureKey: string): Promise<void> { ... }
+```
 
 ### Subscribed Middleware
 
-`middleware/subscribed.ts` chains `authMiddleware` and adds the subscription + plan
+`middleware/subscribed.ts` chains `orgMiddleware` and adds the subscription + plan
 to context. Use it for server functions that require an active subscription:
 
 ```ts
 export const createProject = createServerFn({ method: 'POST' })
   .middleware([subscribedMiddleware])
   .handler(async ({ context }) => {
-    const { subscription } = context;
-    const used = await getUsageCount(context.user.id, 'projects', {
+    const { subscription, organization } = context;
+    const used = await getUsageCount(organization.id, 'projects', {
       start: subscription.currentPeriodStart,
       end: subscription.currentPeriodEnd,
     });
     requireLimit(subscription.plan.entitlements, 'projects', used);
     // ... create project
-    await incrementUsage(context.user.id, 'projects', { start, end });
+    await incrementUsage(organization.id, 'projects', { start, end });
   });
 ```
 
@@ -1301,6 +1428,7 @@ import type PasswordChangedEmail from './password-changed';
 import type VerifyEmailEmail from './verify-email';
 import type SubscriptionCreatedEmail from './subscription-created';
 import type PaymentFailedEmail from './payment-failed';
+import type TeamInvitationEmail from './team-invitation';
 
 type PropsOf<T extends (...args: any[]) => any> = Parameters<T>[0];
 
@@ -1310,6 +1438,7 @@ export type EmailTemplates = {
   'verify-email': PropsOf<typeof VerifyEmailEmail>;
   'subscription-created': PropsOf<typeof SubscriptionCreatedEmail>;
   'payment-failed': PropsOf<typeof PaymentFailedEmail>;
+  'team-invitation': PropsOf<typeof TeamInvitationEmail>;
 };
 ```
 
@@ -1414,18 +1543,21 @@ export function createStorageDriver(config: StorageDriverConfig): StorageDriver 
 ## Auth (Better Auth)
 
 Better Auth handles authentication, sessions, and organization/team management.
-The server instance lives in `lib/auth.ts`. The client lives in `lib/auth-client.ts`.
+The server instance lives in `lib/facades/auth.ts`. The client lives in `lib/auth-client.ts`.
 Session flows through the app via **route context** (routes/components) and
 **middleware** (server functions).
 
 ### Server Instance
 
 ```ts
-// lib/auth.ts
+// lib/facades/auth.ts
 
 import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { twoFactor } from 'better-auth/plugins/two-factor';
+import { admin } from 'better-auth/plugins/admin';
+import { organization } from 'better-auth/plugins/organization';
+import { customSession } from 'better-auth/plugins';
 import { db } from '@/database';
 import { tanstackStartCookies } from 'better-auth/tanstack-start';
 
@@ -1435,7 +1567,13 @@ export const auth = betterAuth({
     usePlural: true,
   }),
   // ... emailVerification, emailAndPassword, socialProviders config
-  plugins: [tanstackStartCookies(), twoFactor()],
+  plugins: [
+    tanstackStartCookies(),
+    twoFactor(),
+    admin(),
+    organization(),
+    customSession(/* ... */),
+  ],
 });
 ```
 
@@ -1445,23 +1583,35 @@ export const auth = betterAuth({
 // lib/auth-client.ts
 
 import { createAuthClient } from 'better-auth/react';
-import { twoFactorClient } from 'better-auth/client/plugins';
+import {
+  adminClient,
+  customSessionClient,
+  twoFactorClient,
+  organizationClient,
+} from 'better-auth/client/plugins';
+import type { auth } from '@/lib/facades/auth';
 
 export const authClient = createAuthClient({
-  plugins: [twoFactorClient({ onTwoFactorRedirect: () => { window.location.href = '/verify-2fa'; } })],
+  plugins: [
+    twoFactorClient({ onTwoFactorRedirect: () => { window.location.href = '/verify-2fa'; } }),
+    adminClient(),
+    organizationClient(),
+    customSessionClient<typeof auth>(),
+  ],
 });
 ```
 
 ### Session via Route Context
 
 Session is fetched once in `__root.tsx` and flows through the entire route tree
-via TanStack Router's context. No re-fetching, no importing `core/` in routes.
+via TanStack Router's context. The session includes the user's `activeOrganization`.
+No re-fetching, no importing `core/` in routes.
 
 ```ts
 // functions/auth.ts
 
 import { createServerFn } from '@tanstack/react-start';
-import { auth } from '@/lib/auth';
+import { auth } from '@/lib/facades/auth';
 
 export const getSessionFn = createServerFn({ method: 'GET' }).handler(
   async ({ request }) => {
@@ -1489,7 +1639,7 @@ export const Route = createRootRouteWithContext()({
 });
 ```
 
-Now every child route and component can access `session` from context.
+Now every child route and component can access `session` (including `activeOrganization`) from context.
 
 ### Route Guards
 
@@ -1516,9 +1666,8 @@ export const Route = createFileRoute('/_app')({
 export const Route = createFileRoute('/admin')({
   beforeLoad: async ({ context }) => {
     if (!context.session) throw redirect({ to: '/login' });
-    // TODO: uncomment admin role check when admin pages are built
-    // if (context.session.user.role !== 'admin')
-    //   throw redirect({ to: '/dashboard' });
+    if (context.session.user.role !== 'admin')
+      throw redirect({ to: '/dashboard' });
   },
   component: () => <Outlet />,
 });
@@ -1548,16 +1697,16 @@ Server functions use middleware (see [Middleware](#middleware) section):
 ```ts
 // Attach middleware — context.user is guaranteed in the handler
 export const createCheckout = createServerFn({ method: 'POST' })
-  .middleware([authMiddleware])
+  .middleware([orgMiddleware])
   .handler(async ({ data, context }) => {
-    // context.user available
+    // context.user + context.organization available
   });
 
-// subscribedMiddleware chains authMiddleware + adds subscription to context
+// subscribedMiddleware chains orgMiddleware + adds subscription to context
 export const cancelSubscription = createServerFn({ method: 'POST' })
   .middleware([subscribedMiddleware])
   .handler(async ({ context }) => {
-    // context.user + context.subscription available
+    // context.user + context.organization + context.subscription available
   });
 ```
 
@@ -1589,6 +1738,7 @@ export const users = pgTable("users", {
   emailVerified: boolean("email_verified").notNull(),
   image: text("image"),
   role: text("role").default("user"),       // "user" | "admin" (site-level)
+  activeOrganizationId: text("active_organization_id"),
   createdAt: timestamp("created_at").notNull(),
   updatedAt: timestamp("updated_at").notNull(),
 })
@@ -1596,18 +1746,29 @@ export const users = pgTable("users", {
 export const sessions = pgTable("sessions", { ... })
 export const accounts = pgTable("accounts", { ... })
 export const verifications = pgTable("verifications", { ... })
+export const organizations = pgTable("organizations", { ... })
+export const members = pgTable("members", { ... })
+export const invitations = pgTable("invitations", { ... })
 ```
 
 ### Roles
 
-Site-level roles via `user.role` column:
+Two levels of roles:
+
+**Site-level** via `user.role` column:
 
 | Role    | Purpose                              |
 | ------- | ------------------------------------ |
 | `user`  | Default role for all users           |
-| `admin` | Access to admin panel (stub exists)  |
+| `admin` | Access to admin panel                |
 
-> **[Planned]** Org/team roles (`owner`, `admin`, `member`) via Better Auth org plugin. The plugin is available but not yet wired with UI.
+**Org-level** via `member.role` column (Better Auth organization plugin):
+
+| Role     | Purpose                               |
+| -------- | ------------------------------------- |
+| `owner`  | Full org control, billing management  |
+| `admin`  | Org administration                    |
+| `member` | Standard member access                |
 
 ### Drizzle Config
 
@@ -1658,12 +1819,12 @@ handles pure business logic — DB writes and emails. It never calls Stripe dire
 
 import { db } from '@/database';
 import { customers, subscriptions, webhookEvents } from '@/database/schemas/billing';
-import { mailer } from '@/lib/mailer';
+import { mailer } from '@/lib/facades/mailer';
 import type { WebhookEvent } from '@/core/drivers/payment/types';
 
-export async function getSubscriptionByUserId(userId: string) {
+export async function getSubscriptionByOrganizationId(organizationId: string) {
   return db.query.subscriptions.findFirst({
-    where: eq(subscriptions.userId, userId),
+    where: eq(subscriptions.organizationId, organizationId),
     with: { plan: true },
   });
 }
@@ -1681,7 +1842,7 @@ export async function handleWebhookEvent(event: WebhookEvent, channel: string) {
 
   switch (event.type) {
     case 'subscription.created':
-      // Resolve customer → userId, lookup plan by priceId, insert subscription
+      // Resolve customer → organizationId, lookup plan by priceId, insert subscription
       // Send confirmation email via mailer
       break;
     case 'subscription.deleted':
@@ -1703,30 +1864,30 @@ export async function handleWebhookEvent(event: WebhookEvent, channel: string) {
 // functions/billing.ts
 
 import { createServerFn } from '@tanstack/react-start';
-import { authMiddleware } from '@/middleware/auth';
+import { orgMiddleware } from '@/middleware/org';
 import { listPlans } from '@/services/plan.service';
-import { getSubscriptionByUserId } from '@/services/subscription.service';
-import { payment } from '@/lib/payment';
+import { getSubscriptionByOrganizationId } from '@/services/subscription.service';
+import { payment } from '@/lib/facades/payment';
 
 export const getPlans = createServerFn().handler(async () => {
   return listPlans();
 });
 
-// Facade resolves userId → customer, planId → priceId internally
+// Facade resolves orgId → customer, planId → priceId internally
 export const createCheckout = createServerFn({ method: 'POST' })
-  .middleware([authMiddleware])
-  .inputValidator((data: { planId: string; successUrl: string; cancelUrl: string }) => data)
+  .middleware([orgMiddleware])
+  .validator(checkoutSchema)
   .handler(async ({ data, context }) => {
-    return payment.checkout(context.user.id, data.planId, {
+    return payment.checkout(context.organization.id, data.planId, {
       success: data.successUrl,
       cancel: data.cancelUrl,
     });
   });
 
 export const cancelSubscription = createServerFn({ method: 'POST' })
-  .middleware([authMiddleware])
+  .middleware([orgMiddleware])
   .handler(async ({ context }) => {
-    const sub = await getSubscriptionByUserId(context.user.id);
+    const sub = await getSubscriptionByOrganizationId(context.organization.id);
     if (!sub) throw new Error('No active subscription');
 
     // Use the subscription's channel to cancel via the correct driver
@@ -1815,212 +1976,28 @@ const cancel = useMutation({
 
 ```
 # Auth (Better Auth managed — schemas/auth.ts)
-user              id, name, email, emailVerified, image, role, createdAt, updatedAt
+user              id, name, email, emailVerified, image, role, activeOrganizationId, createdAt, updatedAt
 session           id, userId, token, expiresAt, ...
 account           id, userId, provider, providerAccountId, ...
 verification      id, identifier, value, expiresAt, ...
+organization      id, name, slug, logo, metadata, createdAt
+member            id, organizationId, userId, role, createdAt
+invitation        id, organizationId, email, role, status, inviterId, expiresAt, createdAt
 
 # Billing (schemas/billing.ts)
-plans             id, channel, externalProductId, externalPriceId, name, description,
-                  price, currency, interval, entitlements (jsonb), sortOrder, popular, active
-customers         id, userId, channel, externalCustomerId
-subscriptions     id, userId, planId, channel, externalId, status,
+plans             id, name, description, entitlements (jsonb), sortOrder, popular, active
+plan_prices       id, planId, channel, externalProductId, externalPriceId
+customers         id, userId, organizationId, channel, externalCustomerId
+subscriptions     id, userId, organizationId, planId, channel, externalId, status,
                   currentPeriodStart, currentPeriodEnd, cancelAtPeriodEnd, canceledAt
-usage             id, userId, featureKey, used, periodStart, periodEnd
+usage             id, organizationId, featureKey, used, periodStart, periodEnd
 webhook_events    id, externalId, channel, type, processedAt
 
 # Settings (schemas/settings.ts)
 settings          User settings (theme, etc.)
 
-# [Planned]
-api_keys          id, orgId, name, keyHash, prefix, lastUsedAt, expiresAt, createdAt
-webhook_endpoints id, orgId, url, events (jsonb), secret, enabled, createdAt
-files             id, orgId, key, url, size, contentType, createdAt
-site_settings     key, value (jsonb)
-```
-
-### Example Data
-
-```
-plans:
-┌──────────┬────────┬──────────┬──────────────────────────────────────────────────────┐
-│ name     │ price  │ interval │ entitlements                                         │
-├──────────┼────────┼──────────┼──────────────────────────────────────────────────────┤
-│ Starter  │ 999    │ monthly  │ { projects: 3, storage: 1 }                          │
-│ Pro      │ 2999   │ monthly  │ { projects: -1, storage: 50, analytics: true }       │
-│ Business │ 9999   │ monthly  │ { projects: -1, storage: 500, analytics: true, ... } │
-└──────────┴────────┴──────────┴──────────────────────────────────────────────────────┘
-```
-
----
-
-## API Keys
-
-> **Status: Planned** — designed but not yet implemented.
-
-API keys are scoped to an organization. Each key has a hashed value (never stored in
-plain text) and a prefix for identification (e.g. `tskit_live_abc12...`).
-
-```ts
-// services/api-key.service.ts
-
-export class ApiKeyService {
-  async create(orgId: string, name: string) {
-    const raw = `tskit_live_${generateRandomString(32)}`;
-    const prefix = raw.slice(0, 16);
-    const keyHash = await hashApiKey(raw);
-
-    await db.insert(apiKeys).values({ orgId, name, keyHash, prefix });
-
-    // Return raw key ONCE — it's never retrievable again
-    return { key: raw, prefix };
-  }
-
-  async validate(raw: string) {
-    const keyHash = await hashApiKey(raw);
-    const key = await db.query.apiKeys.findFirst({
-      where: eq(apiKeys.keyHash, keyHash),
-    });
-    if (!key) return null;
-
-    // Update last used timestamp (fire-and-forget)
-    db.update(apiKeys)
-      .set({ lastUsedAt: new Date() })
-      .where(eq(apiKeys.id, key.id))
-      .then();
-
-    return key;
-  }
-
-  async revoke(id: string, orgId: string) {
-    return db
-      .delete(apiKeys)
-      .where(and(eq(apiKeys.id, id), eq(apiKeys.orgId, orgId)));
-  }
-}
-
-export const apiKeyService = new ApiKeyService();
-```
-
----
-
-## Usage Tracking
-
-Tracks metered usage per user per billing period. One record per user per feature.
-The service handles increment/decrement/reset with lazy period reset — if the period
-has expired, usage resets automatically on next read.
-
-```ts
-// services/usage.service.ts
-
-export async function getUsageCount(
-  userId: string,
-  featureKey: string,
-  period: Period,
-): Promise<number> {
-  const record = await db.query.usage.findFirst({
-    where: and(eq(usage.userId, userId), eq(usage.featureKey, featureKey)),
-  });
-  if (!record) return 0;
-  // Lazy period reset: if expired, reset usage
-  if (record.periodEnd < new Date()) { /* reset and return 0 */ }
-  return record.used;
-}
-
-export async function incrementUsage(
-  userId: string,
-  featureKey: string,
-  period: Period,
-  amount = 1,
-): Promise<void> { /* upsert usage record */ }
-
-export async function decrementUsage(userId: string, featureKey: string, amount = 1): Promise<void> { ... }
-export async function resetUsage(userId: string, featureKey: string): Promise<void> { ... }
-```
-
----
-
-## Outgoing Webhooks
-
-> **Status: Planned** — designed but not yet implemented.
-
-Users configure webhook endpoints to receive events from the platform. Delivery
-happens via the background job queue with automatic retries.
-
-```ts
-// services/webhook.service.ts
-
-import { queue } from '@/lib/queue';
-
-export class WebhookService {
-  async send(orgId: string, event: string, payload: unknown) {
-    const endpoints = await db.query.webhookEndpoints.findMany({
-      where: and(
-        eq(webhookEndpoints.orgId, orgId),
-        eq(webhookEndpoints.enabled, true),
-      ),
-    });
-
-    for (const endpoint of endpoints) {
-      if (!endpoint.events.includes(event)) continue;
-
-      await queue.add('webhook.deliver', {
-        endpointId: endpoint.id,
-        event,
-        payload,
-        secret: endpoint.secret,
-        url: endpoint.url,
-      });
-    }
-  }
-}
-
-export const webhookService = new WebhookService();
-```
-
-Each delivery is signed with the endpoint's secret so the receiver can verify authenticity.
-Failed deliveries are retried with exponential backoff (managed by the job queue).
-
----
-
-## Background Jobs
-
-> **Status: Planned** — designed but not yet implemented.
-
-For async work: webhook delivery retries, email sending, usage aggregation, cleanup tasks.
-
-Options for the queue provider in `core/drivers/queue/`:
-
-| Queue              | Tradeoff                                  |
-| ------------------ | ----------------------------------------- |
-| **BullMQ**         | Redis-backed, mature, full-featured       |
-| **Trigger.dev**    | Managed, serverless-friendly, built-in UI |
-| **Upstash QStash** | HTTP-based, serverless, no Redis needed   |
-
-Job handlers live in `jobs/`:
-
-```ts
-// jobs/webhook-delivery.job.ts
-
-export async function handleWebhookDelivery(data: WebhookDeliveryData) {
-  const signature = signPayload(data.payload, data.secret);
-
-  const res = await fetch(data.url, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Webhook-Signature': signature,
-    },
-    body: JSON.stringify({ event: data.event, data: data.payload }),
-  });
-
-  if (!res.ok) throw new Error(`Webhook failed: ${res.status}`);
-
-  await db
-    .update(webhookDeliveries)
-    .set({ status: 'delivered' })
-    .where(eq(webhookDeliveries.id, data.deliveryId));
-}
+# Audit (schemas/audit.ts)
+audit_logs        id, actorId, action, targetType, targetId, metadata (jsonb), ipAddress, userAgent, createdAt
 ```
 
 ---
@@ -2030,11 +2007,11 @@ export async function handleWebhookDelivery(data: WebhookDeliveryData) {
 ### Subscription Purchase
 
 ```
-User picks plan → createCheckout() → payment.checkout(userId, planId) → facade resolves customer + plan → driver.createCheckout() → redirect to Stripe
+User picks plan → createCheckout() → payment.checkout(orgId, planId) → facade resolves customer + plan → driver.createCheckout() → redirect to Stripe
   ↓
 Webhook fires → payment.handleWebhook(request) → driver verifies signature + normalizes event → subscriptionService.handleWebhookEvent()
   ↓
-Service creates/updates subscription in DB → mailer.send("subscription-created", ...)
+Service creates/updates subscription in DB (org-scoped) → mailer.send("subscription-created", ...)
 ```
 
 ### Admin Config Change
@@ -2043,16 +2020,6 @@ Service creates/updates subscription in DB → mailer.send("subscription-created
 Admin manages plans → CRUD on plans table → billing page reflects changes
 Adding a second Stripe account → add channel to paymentConfig → payment.use('stripe-eu').checkout(...)
 ```
-
----
-
-## Admin
-
-> **Status: Planned** — only a stub route exists at `admin/index.tsx`. Admin middleware, sub-routes, and server functions are not yet implemented.
-
-- `admin/route.tsx` layout route checks `context.session.user.role` in `beforeLoad` and redirects non-admins.
-- All server functions under `functions/admin/` will attach `adminMiddleware` for server-side enforcement.
-- Admin will manage: users, organizations, plans, site settings.
 
 ---
 
@@ -2065,15 +2032,15 @@ To add a new driver (e.g. a new payment gateway):
 3. Add a channel in `config/payment.ts` with credentials
 4. Add a webhook route at `routes/api/webhooks/<name>.ts`
 
-The facade (`lib/payment.ts`) doesn't change — it resolves the channel automatically.
+The facade (`lib/facades/payment.ts`) doesn't change — it resolves the channel automatically.
 
-The same pattern applies to email, storage, and queue drivers.
+The same pattern applies to email, storage, and rate-limit drivers.
 
 ---
 
 ## Adding a New Feature Domain
 
-When your SaaS needs a new domain (e.g. projects, teams, invoices):
+When your SaaS needs a new domain (e.g. projects, invoices):
 
 1. **Schema** — add `database/schemas/<domain>.ts`
 2. **Service** — add `services/<domain>.service.ts`
@@ -2088,4 +2055,3 @@ Follow the existing layer boundaries:
 routes → components → queries → functions → services → database/
                                            → lib/*    → core/drivers
 ```
-
