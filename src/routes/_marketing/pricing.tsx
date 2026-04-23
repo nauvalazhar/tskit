@@ -46,7 +46,7 @@ function PricingPage() {
   const currentPlanPrice = subscription?.plan?.price;
 
   return (
-    <section>
+    <section className="mx-auto max-w-6xl px-6 py-24">
       <header className="text-center mb-16">
         <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-4">
           Simple, transparent pricing.
