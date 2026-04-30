@@ -51,6 +51,16 @@ bun dev
 
 The app runs at [http://localhost:3000](http://localhost:3000).
 
+## Cleaning up
+
+The `packages/` folder ships alongside the app but isn't part of your product. None of it is required for the dev server or production build:
+
+- `packages/docs/` — this documentation site (Astro Starlight). Delete unless you plan to host TSKit docs alongside your app.
+- `packages/cli/` — the `create-tskit` CLI. Delete unless you're maintaining a fork of it.
+- `packages/skill/` — `SKILL.md`, a project guide that AI coding assistants (Claude Code, Cursor, etc.) read for conventions. Keep this if you use AI tools.
+
+Workspaces use a `packages/*` glob, so removing individual sub-folders doesn't require any other config changes.
+
 ## Configuring services
 
 The app boots without any external services. To turn specific features on, see the relevant guide:
