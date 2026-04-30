@@ -1,0 +1,51 @@
+---
+title: Introduction
+description: What TSKit is and why it exists.
+---
+
+TSKit is a SaaS starter kit built on TanStack Start. It comes with authentication, billing, teams, email, storage, and more, all wired together so you can skip the boilerplate and start building your product.
+
+## What's included
+
+- **Authentication** - Email/password, GitHub and Google OAuth, two-factor authentication, email verification, and password reset. Built on Better Auth with a Drizzle adapter.
+- **Billing** - Stripe checkout, subscription management, webhooks, customer portal, and plan-based entitlements. Subscriptions are org-scoped, meaning they belong to teams, not individual users.
+- **Teams** - Multi-tenant organizations with roles (owner, admin, member), email invitations, and a team switcher. Every user gets a personal team on signup.
+- **Email** - Transactional templates built with React Email, sent through Resend. The email driver is swappable.
+- **Storage** - File uploads through Cloudflare R2 or any S3-compatible provider. Also driver-swappable.
+- **Database** - PostgreSQL with Drizzle ORM, migrations, and a seed script.
+- **Design system** - Selia UI components with Tailwind CSS v4.
+- **Admin dashboard** - User management, subscriptions, plans, and audit logs.
+- **Audit logging** - Records who did what across the entire app.
+- **Rate limiting** - Per-route rate limiting with a pluggable driver.
+
+## Tech stack
+
+### Framework
+
+TSKit is built on [TanStack Start](https://tanstack.com/start), a full-stack React framework with SSR, file-based routing, and typed server functions. It runs on [React 19](https://react.dev), uses [TypeScript](https://www.typescriptlang.org) in strict mode, and [Bun](https://bun.sh) as the package manager and runtime.
+
+### Database
+
+[PostgreSQL](https://www.postgresql.org) with [Drizzle ORM](https://orm.drizzle.team) for type-safe queries, schema definitions, and migrations.
+
+### Authentication
+
+[Better Auth](https://better-auth.com) handles authentication with a Drizzle adapter. Supports email/password, social providers (GitHub, Google, and more), two-factor authentication, and email verification out of the box.
+
+### Integrations
+
+Billing, email, and storage are built on a driver system that makes providers swappable. Each integration follows the same config-driver-facade pattern, so you can switch providers or add new ones without changing application code. See the [architecture page](/getting-started/architecture/) for how this works.
+
+- **Billing** - [Stripe](https://stripe.com) and [Polar](https://polar.sh)
+- **Email** - [Resend](https://resend.com) and [SendGrid](https://sendgrid.com), with templates built using [React Email](https://react.email)
+- **Storage** - Any S3-compatible provider ([Cloudflare R2](https://developers.cloudflare.com/r2/), AWS S3, MinIO, etc.)
+- **Rate limiting** - In-memory by default, pluggable for Redis or other backends
+
+### Design system
+
+[Selia UI](https://selia.earth) provides a set of ready-to-use components styled with [Tailwind CSS v4](https://tailwindcss.com) and an OKLCH color system. Components are copied into your project so you own the code and can customize them freely.
+
+## Next steps
+
+- [Installation](/getting-started/installation/) - Get TSKit running locally.
+- [Architecture](/getting-started/architecture/) - How the codebase is organized and why.

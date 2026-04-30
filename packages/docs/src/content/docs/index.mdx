@@ -1,0 +1,36 @@
+---
+title: TSKit
+description: General-purpose SaaS starter kit built on TanStack Start with batteries included.
+template: splash
+hero:
+  tagline: Ship your SaaS faster with auth, billing, teams, and more, all wired up and ready to go.
+  actions:
+    - text: Get Started
+      link: /getting-started/introduction/
+      icon: right-arrow
+    - text: View on GitHub
+      link: https://github.com/nauvalazhar/tskit
+      variant: minimal
+      icon: external
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+Created by [@mhdnauvalazhar](https://x.com/mhdnauvalazhar).
+
+## Features
+
+<CardGrid stagger>
+  <Card title="Authentication" icon="approve-check">
+    Email/password, GitHub & Google OAuth, 2FA, email verification, powered by Better Auth.
+  </Card>
+  <Card title="Billing & Subscriptions" icon="heart">
+    Stripe checkout, subscription lifecycle, webhooks, customer portal, and plan entitlements.
+  </Card>
+  <Card title="Teams & Organizations" icon="list-format">
+    Multi-tenant teams with roles, invitations, and org-scoped billing.
+  </Card>
+  <Card title="Developer Experience" icon="rocket">
+    TanStack Start, Drizzle ORM, React Email, structured logging, and Selia UI design system.
+  </Card>
+</CardGrid>

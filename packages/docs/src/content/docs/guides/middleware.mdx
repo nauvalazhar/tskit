@@ -1,0 +1,126 @@
+---
+title: Middleware
+description: How middleware works in TSKit server functions.
+sidebar:
+  order: 7
+---
+
+import Mermaid from '../../../components/Mermaid.astro'
+
+Middleware in TSKit runs on server functions to handle authentication, authorization, and rate limiting. Each middleware validates a condition and adds data to the function's context.
+
+## How middleware works
+
+Server functions use the `.middleware()` method to attach middleware before the handler runs. Middleware modules can chain together, with each one building on the context from the previous.
+
+```ts
+export const myFunction = createServerFn({ method: 'POST' })
+  .middleware([authMiddleware])
+  .handler(async ({ context }) => {
+    // context.user is available because authMiddleware attached it
+  })
+```
+
+## The middleware chain
+
+TSKit ships with six middleware modules that compose into a chain:
+
+<Mermaid chart={`graph TD
+    RL[createRateLimitMiddleware] --> A[authMiddleware]
+    A --> O[orgMiddleware]
+    A --> EV[emailVerifiedMiddleware]
+    A --> AD[adminMiddleware]
+    O --> S[subscribedMiddleware]`} />
+
+Each middleware depends on the one above it. `subscribedMiddleware` needs org context, so it chains `orgMiddleware` internally. You only need to reference the final middleware you need - it pulls in its dependencies automatically.
+
+### authMiddleware
+
+Validates the session and provides `context.user`. If no session exists, redirects to `/login`.
+
+```ts
+.middleware([authMiddleware])
+// context.user available
+```
+
+### orgMiddleware
+
+Chains `authMiddleware` and fetches the user's active organization. Provides `context.organization`.
+
+```ts
+.middleware([orgMiddleware])
+// context.user and context.organization available
+```
+
+### emailVerifiedMiddleware
+
+Chains `authMiddleware` and throws if the user's email is not verified.
+
+```ts
+.middleware([emailVerifiedMiddleware])
+// only runs if email is verified
+```
+
+### subscribedMiddleware
+
+Chains `orgMiddleware` and checks that the organization has an active or trialing subscription. Provides `context.subscription`.
+
+```ts
+.middleware([subscribedMiddleware])
+// context.user, context.organization, and context.subscription available
+```
+
+### adminMiddleware
+
+Chains `authMiddleware` and a rate limiter. Redirects to `/dashboard` if the user's role is not `admin`.
+
+```ts
+.middleware([adminMiddleware])
+// only runs for admin users
+```
+
+### createRateLimitMiddleware
+
+A factory that creates a rate-limiting middleware for a specific rule. See the [Rate Limiting](/guides/rate-limiting/) guide for details.
+
+```ts
+const uploadRateLimit = createRateLimitMiddleware('upload')
+
+.middleware([uploadRateLimit, authMiddleware])
+```
+
+## Writing custom middleware
+
+To create your own middleware, use `createMiddleware` from TanStack Start. Chain an existing middleware if you need its context:
+
+```ts
+import { createMiddleware } from '@tanstack/react-start'
+import { authMiddleware } from '#/middleware/auth'
+
+export const myMiddleware = createMiddleware({ type: 'function' })
+  .middleware([authMiddleware])
+  .server(async ({ next, context }) => {
+    // context.user is available from authMiddleware
+
+    // Do your check
+    if (!someCondition(context.user)) {
+      throw new Error('Not allowed')
+    }
+
+    // Pass along with extra context
+    return next({
+      context: { myData: 'something' },
+    })
+  })
+```
+
+## Key files
+
+| File | Purpose |
+|------|---------|
+| `middleware/auth.ts` | Session validation, provides user |
+| `middleware/org.ts` | Active organization, chains auth |
+| `middleware/email-verified.ts` | Email verification check |
+| `middleware/subscribed.ts` | Subscription check, chains org |
+| `middleware/admin.ts` | Admin role check |
+| `middleware/rate-limit.ts` | Rate limit middleware factory |

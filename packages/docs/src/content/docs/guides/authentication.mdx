@@ -1,0 +1,171 @@
+---
+title: Authentication
+description: How authentication works in TSKit.
+sidebar:
+  order: 1
+---
+
+import Mermaid from '../../../components/Mermaid.astro'
+
+TSKit uses [Better Auth](https://better-auth.com) for authentication, with a Drizzle adapter for database storage. The auth system supports multiple providers, two-factor authentication, email verification, and password reset.
+
+## Providers
+
+Three providers are available out of the box:
+
+- **Email and password** - Traditional signup with email verification
+- **GitHub OAuth** - Social login through GitHub
+- **Google OAuth** - Social login through Google
+
+### Setting up GitHub OAuth
+
+1. Go to [GitHub Developer Settings](https://github.com/settings/developers) and create a new OAuth application.
+2. Set the authorization callback URL to `http://localhost:3000/api/auth/callback/github` for local development. In production, replace `localhost:3000` with your domain.
+3. Make sure the `user:email` scope is included. Without it, GitHub won't share the user's email and login will fail with an `email_not_found` error.
+4. Copy the client ID and secret into your `.env`:
+
+```bash
+GITHUB_CLIENT_ID=your_client_id
+GITHUB_CLIENT_SECRET=your_client_secret
+```
+
+### Setting up Google OAuth
+
+1. Open the [Google Cloud Console](https://console.cloud.google.com/apis/credentials) and go to APIs & Services, then Credentials.
+2. Click Create Credentials and choose OAuth client ID. Select "Web application" as the type.
+3. Under Authorized redirect URIs, add `http://localhost:3000/api/auth/callback/google`. For production, add your domain with the same path.
+4. Copy the client ID and secret into your `.env`:
+
+```bash
+GOOGLE_CLIENT_ID=your_client_id
+GOOGLE_CLIENT_SECRET=your_client_secret
+```
+
+The callback URLs must match exactly what you register in each provider's dashboard. If you change the base URL of your app (the `VITE_APP_URL` env var), update the callback URLs to match.
+
+### Adding more providers
+
+Better Auth supports many other providers (Apple, Discord, Twitter, etc.). To add one, configure it in `lib/facades/auth.ts` under `socialProviders` and add a login button in your UI. See the [Better Auth social providers documentation](https://better-auth.com/docs/concepts/social-providers) for the full list and setup instructions.
+
+## Session flow
+
+The session is loaded once at the root of the app and flows down through route context. This means every page and component can access the current user without making additional requests.
+
+<Mermaid chart={`sequenceDiagram
+    participant Root as __root.tsx
+    participant Layout as Layout Route
+    participant Page as Page Component
+    Root->>Root: getSession()
+    Root->>Root: getActiveOrganization()
+    Root->>Root: getUserSettings()
+    Root-->>Layout: session, activeOrganization, settings
+    Layout->>Layout: Guard access in beforeLoad
+    Layout-->>Page: Context available via Route.useRouteContext()`} />
+
+Here is what happens step by step:
+
+1. `__root.tsx` calls `getSession()`, `getActiveOrganization()`, and `getUserSettings()` in its `beforeLoad` hook.
+2. The session, active organization, and settings are passed down as route context.
+3. Layout routes (`_auth`, `_app`, `admin`) check access in their own `beforeLoad`. For example, `_app` redirects to `/login` if there is no session.
+4. Page components read session data through `Route.useRouteContext()`.
+
+## Middleware chain
+
+Server functions use middleware to enforce access control. The middleware modules chain together, with each one building on the previous.
+
+<Mermaid chart={`graph LR
+    A[authMiddleware] --> B[orgMiddleware]
+    B --> C[subscribedMiddleware]
+    A --> D[emailVerifiedMiddleware]
+    A --> E[adminMiddleware]`} />
+
+Each middleware adds data to the server function context:
+
+| Middleware | Chains after | Adds to context |
+|-----------|-------------|-----------------|
+| `authMiddleware` | - | `user` (current user) |
+| `orgMiddleware` | auth | `organization` (active org with members) |
+| `emailVerifiedMiddleware` | auth | Throws if email is not verified |
+| `subscribedMiddleware` | org | `subscription` (active or trialing subscription) |
+| `adminMiddleware` | auth | Throws if user is not an admin |
+
+To use middleware in a server function:
+
+```ts
+const myFunction = createServerFn({ method: 'GET' })
+  .middleware([authMiddleware])
+  .handler(async ({ context }) => {
+    // context.user is available here
+  })
+```
+
+For functions that need org context and an active subscription:
+
+```ts
+const billingFunction = createServerFn({ method: 'POST' })
+  .middleware([subscribedMiddleware])
+  .handler(async ({ context }) => {
+    // context.user, context.organization, and context.subscription are all available
+  })
+```
+
+## Two-factor authentication
+
+TSKit supports TOTP-based 2FA using authenticator apps like Google Authenticator, Authy, or 1Password.
+
+**Enabling 2FA:**
+
+1. The user navigates to Settings > Security.
+2. They enter their password to confirm identity.
+3. A QR code is displayed along with backup codes.
+4. The user scans the QR code in their authenticator app and enters the verification code.
+5. 2FA is now active on their account.
+
+**Login with 2FA:**
+
+1. The user enters their email and password.
+2. If 2FA is enabled, they are redirected to `/verify-2fa`.
+3. They enter the 6-digit code from their authenticator app, or use a backup code.
+4. On success, they land on the dashboard.
+
+The 2FA setup component is at `components/settings/enable-two-factor-form.tsx`. The verification page is at `routes/_auth/verify-2fa.tsx`.
+
+## Email verification
+
+Email verification is enabled by default. When a user signs up:
+
+1. An account is created and the user is logged in.
+2. A verification email is sent automatically using the `verify-email` template.
+3. The user clicks the link in the email to verify.
+4. After verification, they are automatically signed in.
+
+You can gate features behind email verification using the `emailVerifiedMiddleware` on server functions, or the `useEmailVerified()` hook on the client side.
+
+## Password reset
+
+The password reset flow works in two steps:
+
+1. The user submits their email on the forgot password page (`/forgot-password`).
+2. They receive an email with a reset link containing a token.
+3. On the reset page (`/reset-password`), they enter a new password.
+4. A confirmation email is sent after the password is changed.
+
+## Personal team on signup
+
+Every new user gets a personal team created automatically through a database hook in `lib/facades/auth.ts`. The team is named after the user (e.g. "Jane's Team") and becomes the user's active organization. This means billing, subscriptions, and usage tracking work from day one without the user having to set anything up manually.
+
+## Key files
+
+| File | Purpose |
+|------|---------|
+| `lib/facades/auth.ts` | Better Auth server config, plugins, database hooks |
+| `lib/auth-client.ts` | Client-side auth with 2FA, admin, and org plugins |
+| `lib/team.ts` | Personal team auto-creation logic |
+| `functions/auth.ts` | Server functions: getSession, listUserAccounts, listSessions |
+| `middleware/auth.ts` | Auth middleware (validates session, provides user) |
+| `middleware/org.ts` | Org middleware (fetches active organization) |
+| `middleware/email-verified.ts` | Email verification check |
+| `middleware/subscribed.ts` | Subscription check |
+| `middleware/admin.ts` | Admin role check |
+| `database/schemas/auth.ts` | User, session, account, organization, member, invitation tables |
+| `routes/api/auth.$.ts` | Catch-all API route for Better Auth |

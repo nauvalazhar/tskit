@@ -1,0 +1,44 @@
+---
+interface Props {
+  chart: string
+}
+
+const { chart } = Astro.props
+---
+
+<div class="mermaid-container not-content">
+  <pre class="mermaid" set:text={chart} />
+</div>
+
+<script>
+  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs'
+
+  function getTheme() {
+    return document.documentElement.dataset.theme === 'dark' ? 'dark' : 'default'
+  }
+
+  async function render() {
+    mermaid.initialize({ startOnLoad: false, theme: getTheme() })
+    // Reset processed diagrams so mermaid re-renders them
+    document.querySelectorAll('.mermaid[data-processed]').forEach((el) => {
+      el.removeAttribute('data-processed')
+      el.innerHTML = el.getAttribute('data-original') || el.textContent || ''
+    })
+    // Store original chart text before first render
+    document.querySelectorAll('.mermaid:not([data-original])').forEach((el) => {
+      el.setAttribute('data-original', el.textContent || '')
+    })
+    await mermaid.run({ querySelector: '.mermaid' })
+  }
+
+  // Watch for theme changes
+  const observer = new MutationObserver((mutations) => {
+    for (const m of mutations) {
+      if (m.attributeName === 'data-theme') render()
+    }
+  })
+  observer.observe(document.documentElement, { attributes: true })
+
+  render()
+  document.addEventListener('astro:page-load', render)
+</script>

@@ -1,0 +1,289 @@
+---
+title: Billing
+description: How billing and subscriptions work in TSKit.
+sidebar:
+  order: 2
+---
+
+import Mermaid from '../../../components/Mermaid.astro'
+
+TSKit supports Stripe and [Polar](https://polar.sh) for billing. Stripe is enabled by default, but you can switch to Polar or run both. Subscriptions are org-scoped, meaning they belong to teams, not individual users. Only team owners and admins can manage billing.
+
+## Setting up Stripe
+
+### Getting your API keys
+
+1. Create a [Stripe account](https://dashboard.stripe.com/register) if you don't have one.
+2. Go to [Developers > API keys](https://dashboard.stripe.com/test/apikeys) in the Stripe dashboard. Make sure you are in test mode (toggle at the top of the page).
+3. Copy the publishable key and secret key into your `.env`:
+
+```bash
+VITE_STRIPE_PUBLISHABLE_KEY=pk_test_...
+STRIPE_SECRET_KEY=sk_test_...
+```
+
+The publishable key starts with `pk_test_` and is safe to expose on the client. The secret key starts with `sk_test_` and must stay server-side.
+
+### Setting up webhooks
+
+Stripe sends webhook events to your app when subscriptions change (created, updated, canceled) or payments fail. TSKit handles these at `/api/webhooks/stripe`.
+
+**For local development**, install the [Stripe CLI](https://docs.stripe.com/stripe-cli) and forward events to your local server:
+
+```bash
+stripe login
+stripe listen --forward-to http://localhost:3000/api/webhooks/stripe
+```
+
+The CLI prints a webhook signing secret that starts with `whsec_`. Copy it into your `.env`:
+
+```bash
+STRIPE_WEBHOOK_SECRET=whsec_...
+```
+
+**For production**, create a webhook endpoint in the [Stripe dashboard](https://dashboard.stripe.com/webhooks):
+
+1. Click "Add endpoint" and set the URL to `https://your-domain.com/api/webhooks/stripe`.
+2. Select these events:
+   - `customer.subscription.created`
+   - `customer.subscription.updated`
+   - `customer.subscription.deleted`
+   - `invoice.payment_succeeded`
+   - `invoice.payment_failed`
+3. Copy the signing secret into your production `.env`.
+
+## Setting up Polar
+
+[Polar](https://polar.sh) is an alternative to Stripe. The Polar driver is included in TSKit but disabled by default. To enable it:
+
+### Getting your API keys
+
+1. Create a [Polar account](https://polar.sh) and set up an organization.
+2. Go to Settings > Developers and create a new access token.
+3. Add your keys to `.env`:
+
+```bash
+PAYMENT_PROVIDER=polar
+POLAR_ACCESS_TOKEN=your_access_token
+POLAR_WEBHOOK_SECRET=your_webhook_secret
+POLAR_SERVER=sandbox
+```
+
+Set `POLAR_SERVER` to `sandbox` for testing or `production` when you go live.
+
+### Enabling the Polar driver
+
+The Polar channel is commented out by default in `config/payment.ts`. Uncomment the `polar` channel in the schema and the channel config to enable it. You also need to uncomment the webhook handler in `routes/api/webhooks/polar.ts`.
+
+### Setting up webhooks
+
+Unlike Stripe, Polar does not have a CLI tool to forward webhooks to localhost. You need to expose your local server to the internet so Polar can reach it. A tunnel tool like [Cloudflare Tunnel](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/), [ngrok](https://ngrok.com), or similar will work:
+
+```bash
+# Example with Cloudflare Tunnel
+cloudflared tunnel --url http://localhost:3000
+```
+
+Copy the public URL the tunnel gives you and create a webhook in your Polar dashboard pointing to `https://your-tunnel-url.com/api/webhooks/polar`. Enable these events:
+
+- `subscription.created`
+- `subscription.active`
+- `subscription.updated`
+- `subscription.canceled`
+- `subscription.revoked`
+- `order.paid`
+
+The webhook handler validates signatures using Polar's SDK and normalizes these events to the same format as Stripe, so the rest of the billing system works the same way regardless of which provider you use.
+
+### Differences from Stripe
+
+Polar uses product IDs instead of Stripe's price/product model, and its event names are slightly different (e.g., `subscription.active` instead of `customer.subscription.updated`). The driver handles all of this internally, so your application code stays the same whether you use Stripe or Polar.
+
+## Plans and entitlements
+
+Plans are stored in the database with an `entitlements` JSONB column. Each entitlement is either a boolean flag or a numeric limit:
+
+```json
+{
+  "projects": 5,
+  "storage": 10,
+  "analytics": true,
+  "priority-support": false
+}
+```
+
+The available feature keys are defined in `config/features.ts`:
+
+```ts
+export const featureRegistry = {
+  projects: { label: 'Projects', type: 'limit' },
+  storage: { label: 'Storage (GB)', type: 'limit' },
+  analytics: { label: 'Advanced Analytics', type: 'boolean' },
+  'priority-support': { label: 'Priority Support', type: 'boolean' },
+  'custom-integrations': { label: 'Custom Integrations', type: 'boolean' },
+  sso: { label: 'SSO & SAML', type: 'boolean' },
+  'dedicated-support': { label: 'Dedicated Support', type: 'boolean' },
+} as const
+```
+
+### Validating entitlements
+
+The entitlement helpers in `lib/entitlements.ts` are plain functions that take an entitlements object as the first argument, so they work anywhere you have that data. That said, the recommended place to enforce them is in server functions. That's the boundary where you gate access before any business logic runs, and `subscribedMiddleware` already gives you the subscription context:
+
+```ts
+import { requireFeature, requireLimit } from '#/lib/entitlements'
+
+export const createProject = createServerFn({ method: 'POST' })
+  .middleware([subscribedMiddleware])
+  .handler(async ({ context }) => {
+    const entitlements = context.subscription.plan.entitlements
+
+    // Throws if the plan doesn't include this feature
+    requireFeature(entitlements, 'analytics')
+
+    // Check a numeric limit against current usage
+    const count = await getUsageCount(context.organization.id, 'projects')
+    requireLimit(entitlements, 'projects', count)
+
+    // ... create the project
+  })
+```
+
+On the client side, you can use the `useSubscription()` hook to read entitlements for UI purposes, like hiding a button or showing an upgrade prompt. This is not a replacement for server-side enforcement - it just makes the UI reflect what the user can do:
+
+```ts
+import { useSubscription } from '#/hooks/use-subscription'
+
+function ProjectList() {
+  const { hasFeature, withinLimit } = useSubscription()
+
+  // Hide the analytics tab if the plan doesn't include it
+  const showAnalytics = hasFeature('analytics')
+
+  // Disable the "New project" button if at the limit
+  const canCreateMore = withinLimit('projects', currentCount)
+}
+```
+
+**Why not check in routes?** Routes are page shells - they load data and render components. A route can read entitlements to decide what to show on the page, but it shouldn't be the place that enforces them. The real action (creating a project, starting a checkout) happens through a server function. If you only check in the route, someone could still call the server function directly and bypass it. Always enforce in the server function, and use the client-side hook just to shape the UI around what the user is allowed to do.
+
+### Entitlement helpers
+
+The helpers in `lib/entitlements.ts` all take the entitlements object as the first argument:
+
+| Helper | What it does |
+|--------|-------------|
+| `hasFeature(entitlements, key)` | Returns `true` if the feature is enabled |
+| `withinLimit(entitlements, key, usage)` | Returns `true` if current usage is under the limit |
+| `remaining(entitlements, key, usage)` | Returns how many are left (or `Infinity` if unlimited) |
+| `requireFeature(entitlements, key)` | Throws if the feature is not enabled |
+| `requireLimit(entitlements, key, usage)` | Throws if the usage limit is reached |
+
+A limit value of `-1` means unlimited.
+
+## Checkout flow
+
+Here is how a checkout works from start to finish:
+
+<Mermaid chart={`sequenceDiagram
+    participant User
+    participant App as Server Function
+    participant Stripe
+    participant Webhook
+    User->>App: createCheckout(planId)
+    App->>Stripe: Create checkout session
+    Stripe-->>User: Redirect to Stripe checkout
+    User->>Stripe: Complete payment
+    Stripe->>Webhook: subscription.created event
+    Webhook->>App: Create subscription record
+    App->>User: Send confirmation email`} />
+
+The `createCheckout` server function uses `orgMiddleware` for org context and checks that the caller has an owner or admin role:
+
+```ts
+export const createCheckout = createServerFn({ method: 'POST' })
+  .middleware([defaultRateLimit, orgMiddleware])
+  .inputValidator(z.object({ planId: z.string().min(1) }))
+  .handler(async ({ data, context }) => {
+    const headers = await getRequestHeaders()
+    await requireBillingRole(headers)
+
+    const result = await payment.checkout(
+      context.organization.id,
+      context.user.id,
+      data.planId,
+      {
+        success: `${baseUrl}/billing/success?session_id={CHECKOUT_SESSION_ID}`,
+        cancel: `${baseUrl}/billing?canceled=true`,
+      },
+    )
+
+    await audit.log({
+      actorId: context.user.id,
+      action: 'billing.checkout.created',
+      targetType: 'organization',
+      targetId: context.organization.id,
+      metadata: { planId: data.planId },
+    })
+
+    return result
+  })
+```
+
+## Subscription lifecycle
+
+Stripe sends webhook events as the subscription changes state. TSKit handles these automatically:
+
+| Stripe event | What happens |
+|-------------|-------------|
+| `customer.subscription.created` | Subscription record created, confirmation email sent |
+| `customer.subscription.updated` | Status and billing period synced |
+| `customer.subscription.deleted` | Subscription marked as canceled |
+| `invoice.payment_failed` | Failure email sent to the user |
+
+Webhook events are logged to a `webhookEvents` table with the external event ID. This prevents duplicate processing if Stripe retries a delivery.
+
+## Cancellation
+
+When a user cancels, the subscription is set to cancel at the end of the current billing period. The user keeps access until then. The flag `cancel_at_period_end` is set on both Stripe and the local database record.
+
+## Changing plans
+
+Plan changes happen immediately with prorated billing. When a user upgrades or downgrades, the `changePlan` function updates the Stripe subscription to the new price and clears any pending cancellation.
+
+## Customer portal
+
+The `createPortalSession` function opens Stripe's hosted billing portal where users can update payment methods, view invoices, and manage their subscription.
+
+## Usage tracking
+
+Usage is tracked per organization per feature with lazy period reset. The `usage.service.ts` module provides:
+
+- `getUsageCount(orgId, featureKey)` - Get current usage, auto-resets if the period expired
+- `incrementUsage(orgId, featureKey)` - Add to the count
+- `decrementUsage(orgId, featureKey)` - Subtract from the count
+- `resetUsage(orgId, featureKey)` - Manual reset
+
+Combine usage tracking with entitlement checks to enforce limits:
+
+```ts
+const count = await getUsageCount(orgId, 'projects')
+requireLimit(subscription.plan.entitlements, 'projects', count)
+```
+
+## Key files
+
+| File | Purpose |
+|------|---------|
+| `lib/facades/payment.ts` | Payment facade (checkout, portal, plan changes, cancellation) |
+| `lib/entitlements.ts` | Feature and limit checking helpers |
+| `core/drivers/payment/stripe.ts` | Stripe driver implementation |
+| `config/payment.ts` | Payment provider config |
+| `config/features.ts` | Feature registry (entitlement keys) |
+| `functions/billing.ts` | Server functions for billing operations |
+| `services/subscription.service.ts` | Subscription lifecycle and webhook handling |
+| `services/plan.service.ts` | Plan queries |
+| `services/usage.service.ts` | Usage tracking with lazy period reset |
+| `database/schemas/billing.ts` | Plans, customers, subscriptions, usage tables |
+| `routes/api/webhooks/stripe.ts` | Stripe webhook endpoint |
+| `middleware/subscribed.ts` | Subscription check middleware |
