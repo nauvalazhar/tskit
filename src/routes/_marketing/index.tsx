@@ -89,12 +89,6 @@ function HomePage() {
             View Pricing
           </Button>
         </div>
-
-        {/* Install command */}
-        <div className="mt-10 inline-flex items-center gap-3 rounded-lg border border-border bg-code px-5 py-3 font-mono text-sm text-foreground">
-          <span className="text-muted select-none">$</span>
-          <span>bun create tskit my-app</span>
-        </div>
       </section>
 
       {/* Stack strip */}
