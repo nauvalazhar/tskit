@@ -65,11 +65,12 @@
       },
     },
     "packages/cli": {
-      "name": "create-tskit",
-      "version": "0.1.0",
+      "name": "create-tskit-app",
+      "version": "0.1.1",
       "bin": {
         "tskit": "./dist/index.js",
         "create-tskit": "./dist/create.js",
+        "create-tskit-app": "./dist/create.js",
       },
       "dependencies": {
         "@clack/prompts": "^0.10.0",
@@ -1105,7 +1106,7 @@
 
     "cors": ["cors@2.8.6", "", { "dependencies": { "object-assign": "^4", "vary": "^1" } }, "sha512-tJtZBBHA6vjIAaF6EnIaq6laBBP9aq/Y3ouVJjEfoHbRBcHBAHYcMh/w8LDrk2PvIMMq8gmopa5D4V8RmbrxGw=="],
 
-    "create-tskit": ["create-tskit@workspace:packages/cli"],
+    "create-tskit-app": ["create-tskit-app@workspace:packages/cli"],
 
     "cross-spawn": ["cross-spawn@7.0.6", "", { "dependencies": { "path-key": "^3.1.0", "shebang-command": "^2.0.0", "which": "^2.0.1" } }, "sha512-uV2QOWP2nWzsy2aMp8aRibhi9dlzF5Hgh5SHaB9OiTGEyDTiJJyx0uy51QXdyWbtAHNua4XJzUKca3OzKUd3vA=="],
 
