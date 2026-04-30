@@ -1,6 +1,6 @@
 {
-  "name": "create-tskit",
-  "version": "0.1.0",
+  "name": "create-tskit-app",
+  "version": "0.1.1",
   "description": "Create and manage TSKit projects — TanStack Start SaaS starter kit",
   "type": "module",
   "license": "MIT",
@@ -21,7 +21,8 @@
   ],
   "bin": {
     "tskit": "./dist/index.js",
-    "create-tskit": "./dist/create.js"
+    "create-tskit": "./dist/create.js",
+    "create-tskit-app": "./dist/create.js"
   },
   "exports": {
     ".": "./dist/index.js",

@@ -47,7 +47,7 @@ export function EmailVerificationBanner() {
 
   return (
     <div className="flex items-center justify-center bg-warning/15 text-warning py-1.5 gap-2">
-      <p className="font-semibold">
+      <p className="font-medium">
         Please verify your email address ({session.user.email})
       </p>
       <Button
