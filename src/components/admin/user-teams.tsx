@@ -1,4 +1,3 @@
-import { useSuspenseQuery } from '@tanstack/react-query';
 import { getRouteApi } from '@tanstack/react-router';
 import {
   Card,
@@ -9,7 +8,6 @@ import {
 } from '@/components/selia/card';
 import { Badge } from '@/components/selia/badge';
 import { Item, ItemContent, ItemTitle, ItemDescription } from '@/components/selia/item';
-import { adminUserQuery } from '@/queries/admin/users.queries';
 
 const routeApi = getRouteApi('/admin/users/$userId');
 
@@ -20,8 +18,7 @@ const ROLE_VARIANTS: Record<string, 'primary' | 'secondary' | 'info'> = {
 };
 
 export function UserTeams() {
-  const { userId } = routeApi.useParams();
-  const user = useSuspenseQuery(adminUserQuery(userId)).data!;
+  const { user } = routeApi.useLoaderData();
 
   const teams = user.teams ?? [];
 

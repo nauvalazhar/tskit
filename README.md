@@ -84,7 +84,6 @@ src/
 ├── services/        # Business logic + DB queries
 ├── functions/       # Server functions (RPC boundary)
 ├── emails/          # React Email templates (server-only)
-├── queries/         # TanStack Query option factories
 ├── hooks/           # Shared React hooks
 ├── middleware/       # Auth, subscription, logging middleware
 ├── config/          # Named channels — env vars read here

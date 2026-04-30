@@ -1,13 +1,12 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { pageTitle } from '@/lib/utils';
-import { adminPlansQuery } from '@/queries/admin/plans.queries';
+import { getAllPlans } from '@/functions/admin/plans';
 import { plansSearchSchema } from '@/validations/admin';
 import { PlansTable } from '@/components/admin/plans-table';
 import { PageHeader } from '@/components/shared/page-header';
 import { Button } from '@/components/selia/button';
 import { PlusIcon } from 'lucide-react';
 import { Heading } from '@/components/selia/heading';
-import { Suspense } from 'react';
 
 export const Route = createFileRoute('/admin/plans/')({
   head: () => ({
@@ -15,9 +14,7 @@ export const Route = createFileRoute('/admin/plans/')({
   }),
   validateSearch: plansSearchSchema,
   loaderDeps: ({ search }) => search,
-  loader: async ({ context, deps }) => {
-    context.queryClient.ensureQueryData(adminPlansQuery({ search: deps.search }));
-  },
+  loader: ({ deps }) => getAllPlans({ data: deps }),
   component: RouteComponent,
 });
 
@@ -36,9 +33,7 @@ function RouteComponent() {
           </Button>
         </div>
       </PageHeader>
-      <Suspense>
-        <PlansTable />
-      </Suspense>
+      <PlansTable />
     </div>
   );
 }

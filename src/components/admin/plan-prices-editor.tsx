@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
+import { getRouteApi, useRouter } from '@tanstack/react-router';
 import { Button } from '@/components/selia/button';
 import { Input } from '@/components/selia/input';
 import {
@@ -22,8 +22,9 @@ import {
 } from '@/components/selia/drawer';
 import { Field, FieldLabel } from '@/components/selia/field';
 import { savePlanPrice, removePlanPrice } from '@/functions/admin/plans';
-import { adminPaymentChannelsQuery } from '@/queries/admin/plans.queries';
 import type { PaymentChannel } from '@/config/payment';
+
+const routeApi = getRouteApi('/admin/plans/$planId');
 import {
   Item,
   ItemContent,
@@ -172,8 +173,8 @@ export function PlanPricesEditor({
   planId: string;
   prices: PlanPrice[];
 }) {
-  const queryClient = useQueryClient();
-  const channels = useSuspenseQuery(adminPaymentChannelsQuery()).data;
+  const router = useRouter();
+  const { channels } = routeApi.useLoaderData();
   const [deleting, setDeleting] = useState<string | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editingPrice, setEditingPrice] = useState<PlanPrice | null>(null);
@@ -187,8 +188,8 @@ export function PlanPricesEditor({
     setDrawerOpen(true);
   }
 
-  function handleSaved() {
-    queryClient.invalidateQueries({ queryKey: ['admin', 'plans'] });
+  async function handleSaved() {
+    await router.invalidate();
   }
 
   function confirmDelete(price: PlanPrice) {
@@ -201,7 +202,7 @@ export function PlanPricesEditor({
     setDeleting(deletingPrice.id);
     try {
       await removePlanPrice({ data: { priceId: deletingPrice.id } });
-      queryClient.invalidateQueries({ queryKey: ['admin', 'plans'] });
+      await router.invalidate();
     } finally {
       setDeleting(null);
       setDeleteConfirmOpen(false);

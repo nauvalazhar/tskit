@@ -1,21 +1,10 @@
 import { useMemo, useState } from 'react';
-import {
-  useReactTable,
-  getCoreRowModel,
-  createColumnHelper,
-  flexRender,
-} from '@tanstack/react-table';
-import {
-  Table,
-  TableHeader,
-  TableBody,
-  TableRow,
-  TableHead,
-  TableCell,
-} from '@/components/selia/table';
+import { createColumnHelper } from '@tanstack/react-table';
 import { Badge } from '@/components/selia/badge';
 import { Button } from '@/components/selia/button';
 import { DataPagination } from '@/components/shared/data-pagination';
+import { DataTable } from '@/components/shared/data-table';
+import { TableSearchInput } from '@/components/shared/table-search-input';
 import {
   Select,
   SelectTrigger,
@@ -40,22 +29,17 @@ import {
   MenuPopup,
   MenuItem,
 } from '@/components/selia/menu';
-import { getRouteApi } from '@tanstack/react-router';
-import { useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
+import { getRouteApi, useRouter } from '@tanstack/react-router';
 import {
   adminCancelSubscription,
   getSubscriptions,
 } from '@/functions/admin/subscriptions';
-import { adminSubscriptionsQuery } from '@/queries/admin/subscriptions.queries';
 import { ChangePlanDialog } from './change-plan-dialog';
 import { SUBSCRIPTION_STATUSES } from '@/lib/constants';
 import { getSubscriptionStatus } from '@/lib/utils';
 import type { SubscriptionStatus } from '@/validations/admin';
-import { EllipsisIcon, SearchIcon } from 'lucide-react';
+import { EllipsisIcon } from 'lucide-react';
 import { Card, CardHeader, CardBody } from '@/components/selia/card';
-import { Input } from '@/components/selia/input';
-import { InputGroup, InputGroupAddon } from '@/components/selia/input-group';
-import { TableContainer } from '@/components/selia/table';
 
 const routeApi = getRouteApi('/admin/subscriptions');
 
@@ -78,9 +62,7 @@ const baseColumns = [
     id: 'team',
     header: 'Team',
     cell: ({ row }) => {
-      const org = (row.original as Record<string, unknown>).organization as
-        | { name: string; slug: string }
-        | undefined;
+      const org = row.original.organization;
       return (
         <div className="min-w-0">
           <p className="font-medium truncate">{org?.name ?? '—'}</p>
@@ -138,12 +120,10 @@ const baseColumns = [
 export function SubscriptionsTable() {
   const { page = 1, search = '', status } = routeApi.useSearch();
   const navigate = routeApi.useNavigate();
-  const { data } = useSuspenseQuery(
-    adminSubscriptionsQuery({ page, search, status }),
-  );
-  const { subscriptions, totalPages } = data;
-  const queryClient = useQueryClient();
+  const { subscriptions, totalPages } = routeApi.useLoaderData();
+  const router = useRouter();
   const [cancelTarget, setCancelTarget] = useState<Subscription | null>(null);
+  const [cancelling, setCancelling] = useState(false);
   const [changePlanTarget, setChangePlanTarget] = useState<Subscription | null>(
     null,
   );
@@ -166,47 +146,34 @@ export function SubscriptionsTable() {
     [],
   );
 
-  const table = useReactTable({
-    data: subscriptions,
-    columns,
-    getCoreRowModel: getCoreRowModel(),
-  });
-
   async function handleCancel() {
     if (!cancelTarget) return;
-    await adminCancelSubscription({
-      data: {
-        externalId: cancelTarget.externalId,
-        channel: cancelTarget.channel,
-      },
-    });
-    queryClient.invalidateQueries({ queryKey: ['admin', 'subscriptions'] });
-    setCancelTarget(null);
+    setCancelling(true);
+    try {
+      await adminCancelSubscription({
+        data: {
+          externalId: cancelTarget.externalId,
+          channel: cancelTarget.channel,
+        },
+      });
+      await router.invalidate();
+      setCancelTarget(null);
+    } finally {
+      setCancelling(false);
+    }
   }
 
   return (
     <Card>
       <CardHeader>
-        <div className="flex flex-col gap-2.5">
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-            <InputGroup className="w-full sm:w-xs">
-              <InputGroupAddon align="start">
-                <SearchIcon />
-              </InputGroupAddon>
-              <Input
-                key={search}
-                placeholder="Search by team name, user name or email..."
-                defaultValue={search}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    const value = (e.target as HTMLInputElement).value;
-                    navigate({
-                      search: { page: 1, search: value || undefined, status },
-                    });
-                  }
-                }}
-              />
-            </InputGroup>
+        <TableSearchInput
+          placeholder="Search by team name, user name or email..."
+          value={search}
+          onSearch={(v) =>
+            navigate({ search: { page: 1, search: v, status } })
+          }
+          onClear={() => navigate({ search: { page: 1, status } })}
+          extraFilters={
             <div className="w-full sm:w-48">
               <Select
                 value={statuses.find((s) => s.value === status) ?? statuses[0]}
@@ -239,64 +206,15 @@ export function SubscriptionsTable() {
                 </SelectPopup>
               </Select>
             </div>
-          </div>
-          {search && (
-            <p className="text-sm text-muted">
-              Showing results for "<strong>{search}</strong>".{' '}
-              <button
-                className="underline cursor-pointer"
-                onClick={() => navigate({ search: { page: 1, status } })}
-              >
-                Clear search
-              </button>
-            </p>
-          )}
-        </div>
+          }
+        />
       </CardHeader>
       <CardBody>
-        <TableContainer>
-          <Table>
-            <TableHeader>
-              {table.getHeaderGroups().map((headerGroup) => (
-                <TableRow key={headerGroup.id}>
-                  {headerGroup.headers.map((header) => (
-                    <TableHead key={header.id}>
-                      {flexRender(
-                        header.column.columnDef.header,
-                        header.getContext(),
-                      )}
-                    </TableHead>
-                  ))}
-                </TableRow>
-              ))}
-            </TableHeader>
-            <TableBody>
-              {table.getRowModel().rows.length === 0 ? (
-                <TableRow>
-                  <TableCell
-                    colSpan={columns.length}
-                    className="text-center text-muted py-8"
-                  >
-                    No subscriptions found.
-                  </TableCell>
-                </TableRow>
-              ) : (
-                table.getRowModel().rows.map((row) => (
-                  <TableRow key={row.id}>
-                    {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id}>
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext(),
-                        )}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </TableContainer>
+        <DataTable
+          data={subscriptions}
+          columns={columns}
+          emptyMessage="No subscriptions found."
+        />
 
         <DataPagination
           page={page}
@@ -324,7 +242,7 @@ export function SubscriptionsTable() {
             </AlertDialogBody>
             <AlertDialogFooter>
               <AlertDialogClose>Close</AlertDialogClose>
-              <Button variant="danger" onClick={handleCancel}>
+              <Button variant="danger" onClick={handleCancel} progress={cancelling}>
                 Cancel Subscription
               </Button>
             </AlertDialogFooter>

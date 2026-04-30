@@ -1,8 +1,7 @@
-import { Suspense } from 'react';
 import { createFileRoute } from '@tanstack/react-router';
 import { pageTitle } from '@/lib/utils';
 import { subscriptionsSearchSchema } from '@/validations/admin';
-import { adminSubscriptionsQuery } from '@/queries/admin/subscriptions.queries';
+import { getSubscriptions } from '@/functions/admin/subscriptions';
 import { SubscriptionsTable } from '@/components/admin/subscriptions-table';
 import { PageHeader } from '@/components/shared/page-header';
 import { Heading } from '@/components/selia/heading';
@@ -13,14 +12,7 @@ export const Route = createFileRoute('/admin/subscriptions')({
   }),
   validateSearch: subscriptionsSearchSchema,
   loaderDeps: ({ search }) => search,
-  loader: ({ context, deps }) =>
-    context.queryClient.ensureQueryData(
-      adminSubscriptionsQuery({
-        page: deps.page,
-        search: deps.search,
-        status: deps.status,
-      }),
-    ),
+  loader: ({ deps }) => getSubscriptions({ data: deps }),
   component: RouteComponent,
 });
 
@@ -30,9 +22,7 @@ function RouteComponent() {
       <PageHeader>
         <Heading>Subscriptions</Heading>
       </PageHeader>
-      <Suspense>
-        <SubscriptionsTable />
-      </Suspense>
+      <SubscriptionsTable />
     </div>
   );
 }

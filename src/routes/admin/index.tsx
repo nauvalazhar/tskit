@@ -1,6 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { useSuspenseQuery } from '@tanstack/react-query';
-import { adminOverviewQuery } from '@/queries/admin/overview.queries';
+import { getAdminOverview } from '@/functions/admin/overview';
 import { pageTitle } from '@/lib/utils';
 import { OverviewStats } from '@/components/admin/overview-stats';
 import { RecentActivity } from '@/components/admin/recent-activity';
@@ -11,14 +10,12 @@ export const Route = createFileRoute('/admin/')({
   head: () => ({
     meta: [{ title: pageTitle('Admin Overview') }],
   }),
-  loader: async ({ context }) => {
-    await context.queryClient.ensureQueryData(adminOverviewQuery());
-  },
+  loader: () => getAdminOverview(),
   component: RouteComponent,
 });
 
 function RouteComponent() {
-  const { data } = useSuspenseQuery(adminOverviewQuery());
+  const data = Route.useLoaderData();
 
   return (
     <div className="space-y-6">

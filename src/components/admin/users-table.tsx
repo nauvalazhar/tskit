@@ -1,23 +1,10 @@
 import { useMemo, useState } from 'react';
-import {
-  useReactTable,
-  getCoreRowModel,
-  createColumnHelper,
-  flexRender,
-} from '@tanstack/react-table';
-import {
-  Table,
-  TableHeader,
-  TableBody,
-  TableRow,
-  TableHead,
-  TableCell,
-  TableContainer,
-} from '@/components/selia/table';
+import { createColumnHelper } from '@tanstack/react-table';
 import { Badge } from '@/components/selia/badge';
 import { Button } from '@/components/selia/button';
-import { Input } from '@/components/selia/input';
 import { DataPagination } from '@/components/shared/data-pagination';
+import { DataTable } from '@/components/shared/data-table';
+import { TableSearchInput } from '@/components/shared/table-search-input';
 import {
   AlertDialog,
   AlertDialogPopup,
@@ -36,19 +23,16 @@ import {
   MenuSeparator,
 } from '@/components/selia/menu';
 import { UserAvatar } from '@/components/shared/user-avatar';
-import { Link, getRouteApi, useNavigate } from '@tanstack/react-router';
-import { useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
+import { Link, getRouteApi, useNavigate, useRouter } from '@tanstack/react-router';
 import {
   adminBanUser,
   adminUnbanUser,
   adminRemoveUser,
   getUsers,
 } from '@/functions/admin/users';
-import { adminUsersQuery } from '@/queries/admin/users.queries';
 import { authClient } from '@/lib/auth-client';
-import { EllipsisIcon, SearchIcon } from 'lucide-react';
+import { EllipsisIcon } from 'lucide-react';
 import { Card, CardBody, CardHeader } from '@/components/selia/card';
-import { InputGroup, InputGroupAddon } from '@/components/selia/input-group';
 
 const routeApi = getRouteApi('/admin/users/');
 
@@ -78,9 +62,7 @@ const baseColumns = [
     id: 'teams',
     header: 'Teams',
     cell: ({ row }) => {
-      const memberList = (row.original as Record<string, unknown>).members as
-        | { organizations: { name: string } }[]
-        | undefined;
+      const memberList = row.original.members;
       if (!memberList?.length) return <span className="text-muted">—</span>;
       return (
         <div className="flex flex-wrap gap-1">
@@ -121,13 +103,14 @@ const baseColumns = [
 export function UsersTable() {
   const { page = 1, search = '' } = routeApi.useSearch();
   const navigate = routeApi.useNavigate();
-  const { data } = useSuspenseQuery(adminUsersQuery({ page, search }));
-  const { users, totalPages } = data;
-  const queryClient = useQueryClient();
+  const { users, totalPages } = routeApi.useLoaderData();
+  const router = useRouter();
   const { data: session } = authClient.useSession();
   const currentUserId = session?.user.id;
   const [banTarget, setBanTarget] = useState<User | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<User | null>(null);
+  const [banning, setBanning] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const columns = useMemo(
     () => [
@@ -148,107 +131,46 @@ export function UsersTable() {
     [currentUserId],
   );
 
-  const table = useReactTable({
-    data: users,
-    columns,
-    getCoreRowModel: getCoreRowModel(),
-  });
-
   async function handleBanToggle() {
     if (!banTarget) return;
-    if (banTarget.banned) {
-      await adminUnbanUser({ data: { userId: banTarget.id } });
-    } else {
-      await adminBanUser({ data: { userId: banTarget.id } });
+    setBanning(true);
+    try {
+      if (banTarget.banned) {
+        await adminUnbanUser({ data: { userId: banTarget.id } });
+      } else {
+        await adminBanUser({ data: { userId: banTarget.id } });
+      }
+      await router.invalidate();
+      setBanTarget(null);
+    } finally {
+      setBanning(false);
     }
-    queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });
-    setBanTarget(null);
   }
 
   async function handleDelete() {
     if (!deleteTarget) return;
-    await adminRemoveUser({ data: { userId: deleteTarget.id } });
-    queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });
-    setDeleteTarget(null);
+    setDeleting(true);
+    try {
+      await adminRemoveUser({ data: { userId: deleteTarget.id } });
+      await router.invalidate();
+      setDeleteTarget(null);
+    } finally {
+      setDeleting(false);
+    }
   }
 
   return (
     <Card>
       <CardHeader>
-        <div className="flex flex-col gap-2.5">
-          <InputGroup className="w-full sm:w-xs">
-            <InputGroupAddon align="start">
-              <SearchIcon />
-            </InputGroupAddon>
-            <Input
-              key={search}
-              placeholder="Search by name or email..."
-              defaultValue={search}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  const value = (e.target as HTMLInputElement).value;
-                  navigate({ search: { page: 1, search: value || undefined } });
-                }
-              }}
-            />
-          </InputGroup>
-          {search && (
-            <p className="text-sm text-muted">
-              Showing results for "<strong>{search}</strong>".{' '}
-              <button
-                className="underline cursor-pointer"
-                onClick={() => navigate({ search: { page: 1 } })}
-              >
-                Clear search
-              </button>
-            </p>
-          )}
-        </div>
+        <TableSearchInput
+          placeholder="Search by name or email..."
+          value={search}
+          onSearch={(v) => navigate({ search: { page: 1, search: v } })}
+          onClear={() => navigate({ search: { page: 1 } })}
+        />
       </CardHeader>
       <CardBody>
-        <TableContainer>
-          <Table>
-            <TableHeader>
-              {table.getHeaderGroups().map((headerGroup) => (
-                <TableRow key={headerGroup.id}>
-                  {headerGroup.headers.map((header) => (
-                    <TableHead key={header.id}>
-                      {flexRender(
-                        header.column.columnDef.header,
-                        header.getContext(),
-                      )}
-                    </TableHead>
-                  ))}
-                </TableRow>
-              ))}
-            </TableHeader>
-            <TableBody>
-              {table.getRowModel().rows.length === 0 ? (
-                <TableRow>
-                  <TableCell
-                    colSpan={columns.length}
-                    className="text-center text-muted py-8"
-                  >
-                    No users found.
-                  </TableCell>
-                </TableRow>
-              ) : (
-                table.getRowModel().rows.map((row) => (
-                  <TableRow key={row.id}>
-                    {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id}>
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext(),
-                        )}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </TableContainer>
+        <DataTable data={users} columns={columns} emptyMessage="No users found." />
 
         <DataPagination
           page={page}
@@ -279,6 +201,7 @@ export function UsersTable() {
               <Button
                 variant={banTarget?.banned ? 'primary' : 'danger'}
                 onClick={handleBanToggle}
+                progress={banning}
               >
                 {banTarget?.banned ? 'Unban' : 'Ban'}
               </Button>
@@ -303,7 +226,7 @@ export function UsersTable() {
             </AlertDialogBody>
             <AlertDialogFooter>
               <AlertDialogClose>Cancel</AlertDialogClose>
-              <Button variant="danger" onClick={handleDelete}>
+              <Button variant="danger" onClick={handleDelete} progress={deleting}>
                 Delete
               </Button>
             </AlertDialogFooter>

@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter, useRouteContext, Link } from '@tanstack/react-router';
 import {
   ChevronsUpDownIcon,
@@ -22,15 +21,12 @@ import {
 import { Button } from '@/components/selia/button';
 import { authClient } from '@/lib/auth-client';
 import { setActiveTeam } from '@/functions/team';
-import { teamListQuery } from '@/queries/team.queries';
 import { UserAvatar } from './user-avatar';
 import { CreateTeamDialog } from '../app/create-team-dialog';
 
 export function UserMenu() {
   const { data: session, error } = authClient.useSession();
-  const { activeOrganization } = useRouteContext({ from: '__root__' });
-  const { data: orgs } = useQuery(teamListQuery());
-  const queryClient = useQueryClient();
+  const { activeOrganization, teams: orgs } = useRouteContext({ from: '__root__' });
   const router = useRouter();
   const [createOpen, setCreateOpen] = useState(false);
 
@@ -43,7 +39,6 @@ export function UserMenu() {
 
   const handleSwitch = async (orgId: string) => {
     await setActiveTeam({ data: { organizationId: orgId } });
-    queryClient.invalidateQueries({ queryKey: ['teams'] });
     await router.invalidate();
   };
 

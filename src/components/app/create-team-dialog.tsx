@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useForm } from '@tanstack/react-form';
-import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from '@tanstack/react-router';
 import {
   Dialog,
@@ -26,7 +25,6 @@ export function CreateTeamDialog({
 }) {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const queryClient = useQueryClient();
   const router = useRouter();
 
   const form = useForm({
@@ -38,7 +36,6 @@ export function CreateTeamDialog({
       try {
         const org = await createTeam({ data: value });
         await setActiveTeam({ data: { organizationId: org.id } });
-        queryClient.invalidateQueries({ queryKey: ['teams'] });
         onOpenChange(false);
         form.reset();
         await router.invalidate();

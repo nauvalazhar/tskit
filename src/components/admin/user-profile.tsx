@@ -1,4 +1,3 @@
-import { useSuspenseQuery } from '@tanstack/react-query';
 import { getRouteApi } from '@tanstack/react-router';
 import {
   Card,
@@ -9,13 +8,11 @@ import {
 } from '@/components/selia/card';
 import { Badge } from '@/components/selia/badge';
 import { UserAvatar } from '@/components/shared/user-avatar';
-import { adminUserQuery } from '@/queries/admin/users.queries';
 
 const routeApi = getRouteApi('/admin/users/$userId');
 
 export function UserProfile() {
-  const { userId } = routeApi.useParams();
-  const user = useSuspenseQuery(adminUserQuery(userId)).data!;
+  const { user } = routeApi.useLoaderData();
 
   return (
     <Card>

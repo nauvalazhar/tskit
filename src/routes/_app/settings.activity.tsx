@@ -3,7 +3,7 @@ import { Text } from '@/components/selia/text';
 import { createFileRoute } from '@tanstack/react-router';
 import { pageTitle } from '@/lib/utils';
 import { ActivityLog } from '@/components/settings/activity-log';
-import { userAuditLogsQuery } from '@/queries/audit.queries';
+import { getUserAuditLogs } from '@/functions/audit';
 import { z } from 'zod';
 
 const searchSchema = z.object({
@@ -17,8 +17,7 @@ export const Route = createFileRoute('/_app/settings/activity')({
   }),
   validateSearch: searchSchema,
   loaderDeps: ({ search }) => search,
-  loader: ({ context, deps }) =>
-    context.queryClient.ensureQueryData(userAuditLogsQuery({ action: deps.action, cursor: deps.cursor })),
+  loader: ({ deps }) => getUserAuditLogs({ data: deps }),
   component: RouteComponent,
 });
 

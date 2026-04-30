@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useForm } from '@tanstack/react-form';
-import { useQueryClient } from '@tanstack/react-query';
-import { useNavigate } from '@tanstack/react-router';
+import { useNavigate, useRouter } from '@tanstack/react-router';
 import {
   Card,
   CardBody,
@@ -53,7 +52,7 @@ export function PlanForm({
   isNew?: boolean;
 }) {
   const save = useServerFn(savePlan);
-  const queryClient = useQueryClient();
+  const router = useRouter();
   const navigate = useNavigate();
   const [saving, setSaving] = useState(false);
 
@@ -89,7 +88,7 @@ export function PlanForm({
           },
         });
 
-        queryClient.invalidateQueries({ queryKey: ['admin', 'plans'] });
+        await router.invalidate();
 
         if (isNew && result) {
           toastManager.add({
@@ -322,17 +321,21 @@ export function PlanForm({
           </CardBody>
         </Card>
 
-        {'id' in plan && (
-          <Card>
-            <CardBody>
-              <CardSubsection>
-                <CardSubsectionTitle>Channel Pricing</CardSubsectionTitle>
-                <CardSubsectionDescription>Map this plan to external payment provider products</CardSubsectionDescription>
-              </CardSubsection>
+        <Card>
+          <CardBody>
+            <CardSubsection>
+              <CardSubsectionTitle>Channel Pricing</CardSubsectionTitle>
+              <CardSubsectionDescription>Map this plan to external payment provider products</CardSubsectionDescription>
+            </CardSubsection>
+            {'id' in plan ? (
               <PlanPricesEditor planId={plan.id} prices={plan.prices || []} />
-            </CardBody>
-          </Card>
-        )}
+            ) : (
+              <p className="text-muted text-sm">
+                Save the plan first. You can map it to payment provider products after it's created.
+              </p>
+            )}
+          </CardBody>
+        </Card>
 
         <Card>
           <CardBody>

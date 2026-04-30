@@ -1,10 +1,6 @@
 import { createFileRoute, Link, notFound } from '@tanstack/react-router';
 import { pageTitle } from '@/lib/utils';
-import { useSuspenseQuery } from '@tanstack/react-query';
-import {
-  adminPlansQuery,
-  adminPaymentChannelsQuery,
-} from '@/queries/admin/plans.queries';
+import { getAllPlans, getPaymentChannels } from '@/functions/admin/plans';
 import { PlanForm } from '@/components/admin/plan-form';
 import { PageHeader } from '@/components/shared/page-header';
 import { Button } from '@/components/selia/button';
@@ -14,21 +10,20 @@ export const Route = createFileRoute('/admin/plans/$planId')({
   head: () => ({
     meta: [{ title: pageTitle('Edit Plan') }],
   }),
-  loader: async ({ context, params }) => {
-    const [plans] = await Promise.all([
-      context.queryClient.ensureQueryData(adminPlansQuery()),
-      context.queryClient.ensureQueryData(adminPaymentChannelsQuery()),
+  loader: async ({ params }) => {
+    const [plans, channels] = await Promise.all([
+      getAllPlans({ data: {} }),
+      getPaymentChannels(),
     ]);
     const plan = plans.find((p) => p.id === params.planId);
     if (!plan) throw notFound();
+    return { plan, channels };
   },
   component: RouteComponent,
 });
 
 function RouteComponent() {
-  const { planId } = Route.useParams();
-  const plans = useSuspenseQuery(adminPlansQuery()).data;
-  const plan = plans.find((p) => p.id === planId)!;
+  const { plan } = Route.useLoaderData();
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">

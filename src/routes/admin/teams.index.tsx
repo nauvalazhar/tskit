@@ -1,8 +1,7 @@
-import { Suspense } from 'react';
 import { createFileRoute } from '@tanstack/react-router';
 import { z } from 'zod';
 import { pageTitle } from '@/lib/utils';
-import { adminTeamsQuery } from '@/queries/admin/teams.queries';
+import { getTeamsAdmin } from '@/functions/admin/teams';
 import { TeamsTable } from '@/components/admin/teams-table';
 import { PageHeader } from '@/components/shared/page-header';
 import { Heading } from '@/components/selia/heading';
@@ -18,10 +17,7 @@ export const Route = createFileRoute('/admin/teams/')({
   }),
   validateSearch: teamsSearchSchema,
   loaderDeps: ({ search }) => search,
-  loader: ({ context, deps }) =>
-    context.queryClient.ensureQueryData(
-      adminTeamsQuery({ page: deps.page, search: deps.search }),
-    ),
+  loader: ({ deps }) => getTeamsAdmin({ data: deps }),
   component: RouteComponent,
 });
 
@@ -31,9 +27,7 @@ function RouteComponent() {
       <PageHeader>
         <Heading>Teams</Heading>
       </PageHeader>
-      <Suspense>
-        <TeamsTable />
-      </Suspense>
+      <TeamsTable />
     </div>
   );
 }

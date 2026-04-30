@@ -143,18 +143,6 @@ src/
 │   ├── team-invitation.tsx          # Team invitation
 │   └── index.ts                     # template type map (inferred)
 │
-├── queries/                         # TanStack Query options
-│   ├── billing.queries.ts
-│   ├── team.queries.ts
-│   ├── audit.queries.ts
-│   └── admin/
-│       ├── overview.queries.ts
-│       ├── users.queries.ts
-│       ├── teams.queries.ts
-│       ├── plans.queries.ts
-│       ├── subscriptions.queries.ts
-│       └── audit.queries.ts
-│
 ├── functions/                       # Server functions (RPC boundary)
 │   ├── auth.ts                      # getSession, listUserAccounts
 │   ├── billing.ts                   # checkout, plans, subscription, cancel
@@ -254,18 +242,17 @@ src/
 ## Layer Responsibilities
 
 ```
-routes → components → queries → functions → services  → database/
-                                           → lib/facades/ → core/drivers
-                              middleware ↗
+routes → components → functions → services  → database/
+                                → lib/facades/ → core/drivers
+                   middleware ↗
          ↘ validations/ ← (importable by all layers, no app imports)
          ↘ lib/* (non-facades) ← (importable by all layers)
 ```
 
 | Layer          | Responsibility                                                                       |
 | -------------- | ------------------------------------------------------------------------------------ |
-| `routes/`      | Thin page shells. Loader calls `ensureQueryData`, renders components. Minimal logic. |
+| `routes/`      | Thin page shells. Loader awaits a server function and returns its data; components read via `Route.useLoaderData()`. |
 | `components/`  | All UI, grouped by domain.                                                           |
-| `queries/`     | TanStack Query options. Bridges client to server via `functions/`.                   |
 | `functions/`   | Server functions (RPC boundary). Validation, orchestration. Calls services.          |
 | `middleware/`  | Auth, org, admin, rate-limit, logging. Attaches to server functions via `.middleware()`. |
 | `services/`    | Business logic + DB queries via Drizzle.                                             |
@@ -1897,78 +1884,65 @@ export const cancelSubscription = createServerFn({ method: 'POST' })
 
 ---
 
-## TanStack Query Options
+## Data Loading
 
-Query options live in `queries/`, consumed by components and route loaders.
+Reads happen through route loaders. The loader awaits the relevant server function and returns its data; components read via `Route.useLoaderData()` (or `getRouteApi('/path').useLoaderData()` from a non-route file). For routes scoped to a single entity, narrow at the loader by writing `if (!entity) throw notFound(); return { entity }`. `useLoaderData` then returns the non-null shape.
 
-### Structure
+After mutations, refresh data with `await router.invalidate()`. This re-runs all active loaders. There is no parallel React Query cache for route data.
 
-```ts
-// queries/billing.queries.ts
-
-import { queryOptions } from '@tanstack/react-query';
-import { getPlans, getSubscription } from '@/functions/billing';
-
-export const billingQueries = {
-  plans: () =>
-    queryOptions({
-      queryKey: ['billing', 'plans'],
-      queryFn: () => getPlans(),
-    }),
-
-  subscription: () =>
-    queryOptions({
-      queryKey: ['billing', 'subscription'],
-      queryFn: () => getSubscription(),
-    }),
-};
-```
-
-### Usage in Loaders (SSR Prefetch)
+### Simple list route
 
 ```tsx
-// routes/_app/billing.tsx
+// routes/_app/billing/index.tsx
+import { getPlans, getSubscription } from '@/functions/billing';
 
-export const Route = createFileRoute('/_app/billing')({
-  loader: ({ context }) => {
-    context.queryClient.ensureQueryData(billingQueries.plans());
-    context.queryClient.ensureQueryData(billingQueries.subscription());
+export const Route = createFileRoute('/_app/billing/')({
+  loader: async () => {
+    const [plans, subscription] = await Promise.all([
+      getPlans(),
+      getSubscription(),
+    ]);
+    return { plans, subscription };
   },
   component: BillingPage,
 });
-```
 
-### Usage in Components (Client-side)
-
-```tsx
 function BillingPage() {
-  const { data: plans } = useSuspenseQuery(billingQueries.plans());
-  const { data: subscription } = useSuspenseQuery(
-    billingQueries.subscription(),
-  );
+  const { plans, subscription } = Route.useLoaderData();
   // ...
 }
 ```
 
-### Invalidation After Mutations
+### Detail route with `notFound()`
 
 ```tsx
-const queryClient = useQueryClient();
-
-const checkout = useMutation({
-  mutationFn: createCheckout,
-  onSuccess: (data) => {
-    window.location.href = data.checkoutUrl;
-  },
-});
-
-const cancel = useMutation({
-  mutationFn: cancelSubscription,
-  onSuccess: () => {
-    queryClient.invalidateQueries({ queryKey: ['billing'] });
-  },
-});
+loader: async ({ params }) => {
+  const team = await getTeam({ data: { teamId: params.teamId } });
+  if (!team) throw notFound();
+  return { team };
+},
 ```
+
+### Mutation flow
+
+```tsx
+async function handleCancel() {
+  await cancelSubscription();
+  await router.invalidate();
+}
+```
+
+### React Query usage
+
+The codebase uses React Query in three places where route loaders aren't a good fit:
+
+- **Polling**: `billing.success.tsx` polls subscription status with `refetchInterval` while waiting for a webhook
+- **Conditional fetches**: `change-plan-dialog.tsx` fetches plans only when the dialog opens (`enabled: open`)
+- **Cross-component shared state**: `hooks/use-subscription.ts` exposes the current subscription and entitlement helpers to any component
+
+In these cases the `queryOptions` factory lives co-located with the consumer file, so there's no `queries/` directory by default.
+
+If a feature genuinely needs React Query more broadly (background refetch on focus, optimistic updates, infinite queries, mutation primitives), go ahead and introduce `src/queries/<domain>.queries.ts` factories and use `ensureQueryData` in loaders or `useSuspenseQuery` in components. The loader-returns-data pattern is the kit's default, not a hard rule.
 
 ---
 
@@ -2045,13 +2019,12 @@ When your SaaS needs a new domain (e.g. projects, invoices):
 1. **Schema** — add `database/schemas/<domain>.ts`
 2. **Service** — add `services/<domain>.service.ts`
 3. **Server functions** — add `functions/<domain>.ts`
-4. **Queries** — add `queries/<domain>.queries.ts`
-5. **Components** — add `components/<domain>/`
-6. **Routes** — add `routes/_app/<domain>.tsx`
+4. **Components** — add `components/<domain>/`
+5. **Routes** — add `routes/_app/<domain>.tsx` (loader awaits the server function and returns data; component uses `Route.useLoaderData()`)
 
 Follow the existing layer boundaries:
 
 ```
-routes → components → queries → functions → services → database/
-                                           → lib/*    → core/drivers
+routes → components → functions → services → database/
+                                → lib/*    → core/drivers
 ```

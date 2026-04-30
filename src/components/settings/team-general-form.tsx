@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useForm } from '@tanstack/react-form';
-import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from '@tanstack/react-router';
 import { Button } from '@/components/selia/button';
 import { Input } from '@/components/selia/input';
@@ -17,7 +16,6 @@ export function TeamGeneralForm({
   slug: string;
 }) {
   const [pending, setPending] = useState(false);
-  const queryClient = useQueryClient();
   const router = useRouter();
 
   const form = useForm({
@@ -27,7 +25,6 @@ export function TeamGeneralForm({
 
       try {
         await updateTeam({ data: { name: value.name, slug: value.slug } });
-        queryClient.invalidateQueries({ queryKey: ['teams'] });
         await router.invalidate();
         toastManager.add({
           title: 'Team updated',

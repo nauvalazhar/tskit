@@ -1,28 +1,11 @@
-import {
-  useReactTable,
-  getCoreRowModel,
-  createColumnHelper,
-  flexRender,
-} from '@tanstack/react-table';
-import {
-  Table,
-  TableHeader,
-  TableBody,
-  TableRow,
-  TableHead,
-  TableCell,
-  TableContainer,
-} from '@/components/selia/table';
+import { createColumnHelper } from '@tanstack/react-table';
 import { Badge } from '@/components/selia/badge';
-import { Input } from '@/components/selia/input';
 import { DataPagination } from '@/components/shared/data-pagination';
+import { DataTable } from '@/components/shared/data-table';
+import { TableSearchInput } from '@/components/shared/table-search-input';
 import { getRouteApi, Link } from '@tanstack/react-router';
-import { useSuspenseQuery } from '@tanstack/react-query';
-import { adminTeamsQuery } from '@/queries/admin/teams.queries';
 import { getSubscriptionStatus } from '@/lib/utils';
-import { SearchIcon } from 'lucide-react';
 import { Card, CardBody, CardHeader } from '@/components/selia/card';
-import { InputGroup, InputGroupAddon } from '@/components/selia/input-group';
 import type { getTeamsAdmin } from '@/functions/admin/teams';
 
 const routeApi = getRouteApi('/admin/teams/');
@@ -98,92 +81,20 @@ const columns = [
 export function TeamsTable() {
   const { page = 1, search = '' } = routeApi.useSearch();
   const navigate = routeApi.useNavigate();
-  const { data } = useSuspenseQuery(adminTeamsQuery({ page, search }));
-  const { teams, totalPages } = data;
-
-  const table = useReactTable({
-    data: teams,
-    columns,
-    getCoreRowModel: getCoreRowModel(),
-  });
+  const { teams, totalPages } = routeApi.useLoaderData();
 
   return (
     <Card>
       <CardHeader>
-        <div className="flex flex-col gap-2.5">
-          <InputGroup className="w-full sm:w-xs">
-            <InputGroupAddon align="start">
-              <SearchIcon />
-            </InputGroupAddon>
-            <Input
-              key={search}
-              placeholder="Search by team name or slug..."
-              defaultValue={search}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  const value = (e.target as HTMLInputElement).value;
-                  navigate({ search: { page: 1, search: value || undefined } });
-                }
-              }}
-            />
-          </InputGroup>
-          {search && (
-            <p className="text-sm text-muted">
-              Showing results for "<strong>{search}</strong>".{' '}
-              <button
-                className="underline cursor-pointer"
-                onClick={() => navigate({ search: { page: 1 } })}
-              >
-                Clear search
-              </button>
-            </p>
-          )}
-        </div>
+        <TableSearchInput
+          placeholder="Search by team name or slug..."
+          value={search}
+          onSearch={(v) => navigate({ search: { page: 1, search: v } })}
+          onClear={() => navigate({ search: { page: 1 } })}
+        />
       </CardHeader>
       <CardBody>
-        <TableContainer>
-          <Table>
-            <TableHeader>
-              {table.getHeaderGroups().map((headerGroup) => (
-                <TableRow key={headerGroup.id}>
-                  {headerGroup.headers.map((header) => (
-                    <TableHead key={header.id}>
-                      {flexRender(
-                        header.column.columnDef.header,
-                        header.getContext(),
-                      )}
-                    </TableHead>
-                  ))}
-                </TableRow>
-              ))}
-            </TableHeader>
-            <TableBody>
-              {table.getRowModel().rows.length === 0 ? (
-                <TableRow>
-                  <TableCell
-                    colSpan={columns.length}
-                    className="text-center text-muted py-8"
-                  >
-                    No teams found.
-                  </TableCell>
-                </TableRow>
-              ) : (
-                table.getRowModel().rows.map((row) => (
-                  <TableRow key={row.id}>
-                    {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id}>
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext(),
-                        )}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </TableContainer>
+        <DataTable data={teams} columns={columns} emptyMessage="No teams found." />
 
         <DataPagination
           page={page}

@@ -14,7 +14,6 @@ import {
   AlertDialogClose,
 } from '@/components/selia/alert-dialog';
 import { toastManager } from '@/components/selia/toast';
-import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from '@tanstack/react-router';
 import { deleteTeam, setActiveTeam } from '@/functions/team';
 
@@ -31,7 +30,6 @@ export function TeamDelete({
 }) {
   const [confirmation, setConfirmation] = useState('');
   const [pending, setPending] = useState(false);
-  const queryClient = useQueryClient();
   const router = useRouter();
 
   const handleDelete = async () => {
@@ -46,7 +44,6 @@ export function TeamDelete({
       }
 
       await deleteTeam({ data: { organizationId } });
-      queryClient.invalidateQueries({ queryKey: ['teams'] });
       toastManager.add({
         title: 'Team deleted',
         description: `${teamName} has been permanently deleted.`,

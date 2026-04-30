@@ -1,9 +1,7 @@
 import { useState } from 'react';
 import { createFileRoute, Link, notFound, useRouter } from '@tanstack/react-router';
-import { useSuspenseQuery } from '@tanstack/react-query';
 import { pageTitle, getSubscriptionStatus } from '@/lib/utils';
-import { adminTeamQuery } from '@/queries/admin/teams.queries';
-import { adminDeleteTeam } from '@/functions/admin/teams';
+import { adminDeleteTeam, getTeam } from '@/functions/admin/teams';
 import { Button } from '@/components/selia/button';
 import { Badge } from '@/components/selia/badge';
 import {
@@ -41,18 +39,16 @@ export const Route = createFileRoute('/admin/teams/$teamId')({
   head: () => ({
     meta: [{ title: pageTitle('Team Details') }],
   }),
-  loader: async ({ context, params }) => {
-    const team = await context.queryClient.ensureQueryData(
-      adminTeamQuery(params.teamId),
-    );
+  loader: async ({ params }) => {
+    const team = await getTeam({ data: { teamId: params.teamId } });
     if (!team) throw notFound();
+    return { team };
   },
   component: RouteComponent,
 });
 
 function RouteComponent() {
-  const { teamId } = Route.useParams();
-  const team = useSuspenseQuery(adminTeamQuery(teamId)).data!;
+  const { team } = Route.useLoaderData();
 
   const pendingInvitations =
     team.invitations?.filter((inv) => inv.status === 'pending') ?? [];

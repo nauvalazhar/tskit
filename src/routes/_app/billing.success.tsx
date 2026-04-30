@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { createFileRoute, Link, redirect } from '@tanstack/react-router';
 import { pageTitle } from '@/lib/utils';
-import { useQuery } from '@tanstack/react-query';
-import { billingSubscriptionPollingQuery } from '@/queries/billing.queries';
+import { queryOptions, useQuery } from '@tanstack/react-query';
+import { getSubscription } from '@/functions/billing';
 import { Card, CardBody } from '@/components/selia/card';
 import { Button } from '@/components/selia/button';
 import { CheckIcon, LoaderCircleIcon, AlertTriangleIcon } from 'lucide-react';
@@ -27,6 +27,20 @@ export const Route = createFileRoute('/_app/billing/success')({
 
 const SLOW_THRESHOLD = 5_000;
 const TIMEOUT = 30_000;
+const POLL_INTERVAL = 2000;
+
+function pollingQuery(enabled: boolean) {
+  return queryOptions({
+    queryKey: ['billing', 'subscription', 'polling'],
+    queryFn: () => getSubscription().then((data) => data ?? null),
+    refetchInterval: (query) => {
+      if (!enabled) return false;
+      const status = query.state.data?.status;
+      if (status === 'active' || status === 'trialing') return false;
+      return POLL_INTERVAL;
+    },
+  });
+}
 
 function RouteComponent() {
   const [elapsed, setElapsed] = useState(0);
@@ -39,7 +53,7 @@ function RouteComponent() {
   }, []);
 
   const timedOut = elapsed >= TIMEOUT;
-  const { data: subscription } = useQuery(billingSubscriptionPollingQuery(!timedOut));
+  const { data: subscription } = useQuery(pollingQuery(!timedOut));
   const isActive = subscription?.status === 'active' || subscription?.status === 'trialing';
 
   if (isActive) {

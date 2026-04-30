@@ -17,7 +17,6 @@ src/
 ├── services/          # Business logic + DB queries (named function exports)
 ├── functions/         # Server functions (RPC boundary, middleware + validator)
 ├── emails/            # React Email templates (subject export + default component)
-├── queries/           # TanStack Query option factories
 ├── hooks/             # React hooks
 ├── middleware/         # Auth, org, admin, rate-limit, subscribed, logging
 ├── config/            # Named channels, static registries, env var reads
@@ -33,16 +32,16 @@ src/
 ### Import Direction
 
 ```
-routes → components → queries → functions → services → database/
-                                           → lib/facades/ → core/drivers
-                              middleware ↗
+routes → components → functions → services → database/
+                                → lib/facades/ → core/drivers
+                   middleware ↗
            ↘ validations/ ← (importable by all layers, no app imports)
            ↘ lib/* (non-facades) ← (importable by all layers)
 ```
 
 ### Layer Responsibilities
 
-- **routes/** — thin shells. Loader calls `ensureQueryData`, renders components. No business logic.
+- **routes/** — thin shells. Loader awaits a server function and returns its data; components read via `Route.useLoaderData()`. No business logic.
 - **routes/api/** — server-only API handlers (auth, webhooks). May import services directly — no RPC boundary needed.
 - **components/** — all UI, grouped by domain. Access session via `Route.useRouteContext()`. May import from `lib/` root (auth-client, entitlements, utils) but NOT from `lib/facades/`.
 - **functions/** — server functions (RPC boundary). Auth via `.middleware()`, validation via `.validator()`.
@@ -120,6 +119,16 @@ Feature keys defined in `config/features.ts`.
 
 Log actions via `audit.log()` from `lib/audit.ts`. Action names use dot-notation: `domain.resource.verb` (e.g., `billing.checkout.created`, `admin.user.banned`).
 
+### Data Loading
+
+Reads happen through route loaders. The loader awaits the relevant server function and returns the data; subcomponents read it via `Route.useLoaderData()` (or `getRouteApi('/path').useLoaderData()` from a non-route file). For routes scoped to a single entity, narrow at the loader by writing `if (!entity) throw notFound(); return { entity }`. `useLoaderData` then returns the non-null shape.
+
+After mutations, refresh data with `await router.invalidate()`. This re-runs all active loaders. Do not maintain a parallel React Query cache for route data.
+
+By default, this codebase uses React Query only where route loaders aren't a good fit: polling (`refetchInterval`), conditional fetches tied to UI state (`enabled: open`), and cross-component shared state (e.g. `useSubscription` hook). In those cases, define `queryOptions` co-located with the consumer file. There's no `queries/` directory.
+
+If a feature genuinely needs React Query more broadly (background refetch on focus, optimistic updates, infinite queries, etc.), it's fine to introduce a `queries/<domain>.queries.ts` factory and use `ensureQueryData` / `useSuspenseQuery`. The default loader pattern is the recommended path, not a hard rule.
+
 ### Session Flow
 
 Session fetched once in `__root.tsx` → flows via route context (includes `activeOrganization`) → layout routes guard access in `beforeLoad` → components read via `Route.useRouteContext()`.
@@ -145,8 +154,6 @@ Incoming webhooks live in `routes/api/webhooks/<provider>.ts`. They are server-o
 | Service file | `<domain>.service.ts` | `plan.service.ts` |
 | Service exports | Named functions (not classes) | `export async function listPlans()` |
 | Server function | `camelCase` verb | `createCheckout`, `getPlans` |
-| Query file | `<domain>.queries.ts` | `billing.queries.ts` |
-| Query object | `<domain>Queries` | `billingQueries.plans()` |
 | Component file | `kebab-case.tsx` | `plan-card.tsx` |
 | Route file | TanStack convention | `billing.index.tsx` |
 | Email template | `kebab-case.tsx` | `verify-email.tsx` |
@@ -163,12 +170,12 @@ Incoming webhooks live in `routes/api/webhooks/<provider>.ts`. They are server-o
 ### Add a page
 1. Create route file in `routes/_app/<name>.tsx` (or `_marketing/` for public)
 2. Create component(s) in `components/<domain>/`
-3. If data needed: add server function in `functions/`, query in `queries/`, loader in route
+3. If data needed: add server function in `functions/`, call it from the route's `loader`, read via `Route.useLoaderData()`
 
 ### Add a service
 1. Create `services/<domain>.service.ts` with named function exports
 2. Create server functions in `functions/<domain>.ts` with appropriate middleware
-3. Add query options in `queries/<domain>.queries.ts`
+3. Call the server function from a route loader (for page data) or a co-located `queryOptions` (for polling / conditional / cross-component cases only)
 
 ### Add an email template
 1. Create `emails/<name>.tsx` exporting `subject` function + default component

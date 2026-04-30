@@ -1,6 +1,6 @@
 import { createFileRoute, Link, notFound } from '@tanstack/react-router';
 import { pageTitle } from '@/lib/utils';
-import { adminUserQuery } from '@/queries/admin/users.queries';
+import { getUser } from '@/functions/admin/users';
 import { Button } from '@/components/selia/button';
 import { UserProfile } from '@/components/admin/user-profile';
 import { UserTeams } from '@/components/admin/user-teams';
@@ -15,11 +15,10 @@ export const Route = createFileRoute('/admin/users/$userId')({
   head: () => ({
     meta: [{ title: pageTitle('User Details') }],
   }),
-  loader: async ({ context, params }) => {
-    const user = await context.queryClient.ensureQueryData(
-      adminUserQuery(params.userId),
-    );
+  loader: async ({ params }) => {
+    const user = await getUser({ data: { userId: params.userId } });
     if (!user) throw notFound();
+    return { user };
   },
   component: RouteComponent,
 });

@@ -1,5 +1,5 @@
+import { useState } from 'react';
 import { useRouter } from '@tanstack/react-router';
-import { useQueryClient } from '@tanstack/react-query';
 import { Badge } from '@/components/selia/badge';
 import { Button } from '@/components/selia/button';
 import {
@@ -49,14 +49,14 @@ export function TeamMembersList({
   organizationId: string;
 }) {
   const router = useRouter();
-  const queryClient = useQueryClient();
+  const [leaving, setLeaving] = useState(false);
   const canManage = currentUserRole === 'owner' || currentUserRole === 'admin';
   const isOwner = currentUserRole === 'owner';
 
   const handleLeave = async () => {
+    setLeaving(true);
     try {
       await leaveTeam({ data: { organizationId } });
-      queryClient.invalidateQueries({ queryKey: ['teams'] });
       toastManager.add({
         title: 'Left team',
         type: 'success',
@@ -70,45 +70,39 @@ export function TeamMembersList({
           err instanceof Error ? err.message : 'Failed to leave team.',
         type: 'error',
       });
+      setLeaving(false);
     }
   };
 
-  const handleRemove = async (memberIdOrEmail: string) => {
-    try {
-      await removeMember({ data: { memberIdOrEmail } });
-      await router.invalidate();
-      toastManager.add({
-        title: 'Member removed',
-        type: 'success',
-      });
-    } catch (err) {
-      toastManager.add({
-        title: 'Error',
-        description:
-          err instanceof Error ? err.message : 'Failed to remove member.',
-        type: 'error',
-      });
-    }
+  const handleRemove = (memberIdOrEmail: string) => {
+    toastManager.promise(
+      removeMember({ data: { memberIdOrEmail } }).then(() => router.invalidate()),
+      {
+        loading: { title: 'Removing member...', type: 'loading' },
+        success: { title: 'Member removed', type: 'success' },
+        error: (err) => ({
+          title:
+            err instanceof Error ? err.message : 'Failed to remove member.',
+          type: 'error',
+        }),
+      },
+    );
   };
 
-  const handleRoleChange = async (memberId: string, role: string) => {
-    try {
-      await updateMemberRole({
+  const handleRoleChange = (memberId: string, role: string) => {
+    toastManager.promise(
+      updateMemberRole({
         data: { memberId, role: role as 'owner' | 'admin' | 'member' },
-      });
-      await router.invalidate();
-      toastManager.add({
-        title: 'Role updated',
-        type: 'success',
-      });
-    } catch (err) {
-      toastManager.add({
-        title: 'Error',
-        description:
-          err instanceof Error ? err.message : 'Failed to update role.',
-        type: 'error',
-      });
-    }
+      }).then(() => router.invalidate()),
+      {
+        loading: { title: 'Updating role...', type: 'loading' },
+        success: { title: 'Role updated', type: 'success' },
+        error: (err) => ({
+          title: err instanceof Error ? err.message : 'Failed to update role.',
+          type: 'error',
+        }),
+      },
+    );
   };
 
   return (
@@ -139,7 +133,12 @@ export function TeamMembersList({
               {ROLE_LABELS[member.role] ?? member.role}
             </Badge>
             {isCurrentUser && !isMemberOwner && (
-              <Button variant="plain" size="xs" onClick={handleLeave}>
+              <Button
+                variant="plain"
+                size="xs"
+                onClick={handleLeave}
+                progress={leaving}
+              >
                 Leave
               </Button>
             )}

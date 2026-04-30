@@ -1,7 +1,6 @@
-import { Suspense } from 'react';
 import { createFileRoute } from '@tanstack/react-router';
 import { pageTitle } from '@/lib/utils';
-import { adminAuditLogsQuery } from '@/queries/admin/audit.queries';
+import { getAuditLogs } from '@/functions/admin/audit';
 import { AuditLogTable } from '@/components/admin/audit-log-table';
 import { PageHeader } from '@/components/shared/page-header';
 import { Heading } from '@/components/selia/heading';
@@ -13,10 +12,7 @@ export const Route = createFileRoute('/admin/audit')({
     meta: [{ title: pageTitle('Audit Log') }],
   }),
   loaderDeps: ({ search }) => search,
-  loader: ({ context, deps }) =>
-    context.queryClient.ensureQueryData(
-      adminAuditLogsQuery({ action: deps.action, cursor: deps.cursor }),
-    ),
+  loader: ({ deps }) => getAuditLogs({ data: deps }),
   component: RouteComponent,
 });
 
@@ -26,9 +22,7 @@ function RouteComponent() {
       <PageHeader>
         <Heading>Audit Log</Heading>
       </PageHeader>
-      <Suspense>
-        <AuditLogTable />
-      </Suspense>
+      <AuditLogTable />
     </div>
   );
 }

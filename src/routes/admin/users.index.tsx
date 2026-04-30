@@ -1,7 +1,6 @@
-import { Suspense } from 'react';
 import { createFileRoute } from '@tanstack/react-router';
 import { pageTitle } from '@/lib/utils';
-import { adminUsersQuery } from '@/queries/admin/users.queries';
+import { getUsers } from '@/functions/admin/users';
 import { UsersTable } from '@/components/admin/users-table';
 import { PageHeader } from '@/components/shared/page-header';
 import { usersSearchSchema } from '@/validations/admin';
@@ -13,10 +12,7 @@ export const Route = createFileRoute('/admin/users/')({
     meta: [{ title: pageTitle('Users') }],
   }),
   loaderDeps: ({ search }) => search,
-  loader: ({ context, deps }) =>
-    context.queryClient.ensureQueryData(
-      adminUsersQuery({ page: deps.page, search: deps.search }),
-    ),
+  loader: ({ deps }) => getUsers({ data: deps }),
   component: RouteComponent,
 });
 
@@ -26,9 +22,7 @@ function RouteComponent() {
       <PageHeader>
         <Heading>Users</Heading>
       </PageHeader>
-      <Suspense>
-        <UsersTable />
-      </Suspense>
+      <UsersTable />
     </div>
   );
 }

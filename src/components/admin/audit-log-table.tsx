@@ -1,20 +1,7 @@
 import { useState } from 'react';
-import {
-  useReactTable,
-  getCoreRowModel,
-  createColumnHelper,
-  flexRender,
-} from '@tanstack/react-table';
-import {
-  Table,
-  TableHeader,
-  TableBody,
-  TableRow,
-  TableHead,
-  TableCell,
-  TableContainer,
-} from '@/components/selia/table';
+import { createColumnHelper } from '@tanstack/react-table';
 import { Badge } from '@/components/selia/badge';
+import { DataTable } from '@/components/shared/data-table';
 import {
   Select,
   SelectTrigger,
@@ -30,9 +17,7 @@ import {
   TooltipPopup,
 } from '@/components/selia/tooltip';
 import { UserAvatar } from '@/components/shared/user-avatar';
-import { useSuspenseQuery } from '@tanstack/react-query';
 import { getRouteApi } from '@tanstack/react-router';
-import { adminAuditLogsQuery } from '@/queries/admin/audit.queries';
 import {
   getActionLabel,
   getActionDomain,
@@ -156,15 +141,8 @@ const columns = [
 export function AuditLogTable() {
   const { action, cursor } = routeApi.useSearch();
   const navigate = routeApi.useNavigate();
-  const { data } = useSuspenseQuery(adminAuditLogsQuery({ action, cursor }));
-  const { items, nextCursor } = data;
+  const { items, nextCursor } = routeApi.useLoaderData();
   const [cursorStack, setCursorStack] = useState<string[]>([]);
-
-  const table = useReactTable({
-    data: items,
-    columns,
-    getCoreRowModel: getCoreRowModel(),
-  });
 
   function handleNextPage() {
     if (!nextCursor) return;
@@ -227,49 +205,11 @@ export function AuditLogTable() {
           </div>
         </CardHeader>
         <CardBody>
-          <TableContainer>
-            <Table>
-              <TableHeader>
-                {table.getHeaderGroups().map((headerGroup) => (
-                  <TableRow key={headerGroup.id}>
-                    {headerGroup.headers.map((header) => (
-                      <TableHead key={header.id}>
-                        {flexRender(
-                          header.column.columnDef.header,
-                          header.getContext(),
-                        )}
-                      </TableHead>
-                    ))}
-                  </TableRow>
-                ))}
-              </TableHeader>
-              <TableBody>
-                {table.getRowModel().rows.length === 0 ? (
-                  <TableRow>
-                    <TableCell
-                      colSpan={columns.length}
-                      className="text-center text-muted py-8"
-                    >
-                      No audit logs found.
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  table.getRowModel().rows.map((row) => (
-                    <TableRow key={row.id}>
-                      {row.getVisibleCells().map((cell) => (
-                        <TableCell key={cell.id}>
-                          {flexRender(
-                            cell.column.columnDef.cell,
-                            cell.getContext(),
-                          )}
-                        </TableCell>
-                      ))}
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </TableContainer>
+          <DataTable
+            data={items}
+            columns={columns}
+            emptyMessage="No audit logs found."
+          />
         </CardBody>
       </Card>
 

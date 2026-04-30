@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
-import { getRouteApi, useNavigate } from '@tanstack/react-router';
+import { getRouteApi, useNavigate, useRouter } from '@tanstack/react-router';
 import {
   Card,
   CardBody,
@@ -33,7 +32,6 @@ import {
   adminSetRole,
   adminRemoveUser,
 } from '@/functions/admin/users';
-import { adminUserQuery } from '@/queries/admin/users.queries';
 import { toastManager } from '@/components/selia/toast';
 import { Strong } from '@/components/selia/text';
 import { authClient } from '@/lib/auth-client';
@@ -46,27 +44,29 @@ const roles = [
 ];
 
 export function UserActions() {
-  const { userId } = routeApi.useParams();
-  const user = useSuspenseQuery(adminUserQuery(userId)).data!;
+  const { user } = routeApi.useLoaderData();
   const { data: session } = authClient.useSession();
   const isSelf = session?.user.id === user.id;
-  const queryClient = useQueryClient();
+  const router = useRouter();
   const navigate = useNavigate();
   const [role, setRole] = useState(user.role || 'user');
   const [banOpen, setBanOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [savingRole, setSavingRole] = useState(false);
+  const [banning, setBanning] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   if (isSelf) return null;
 
   async function handleBanToggle() {
+    setBanning(true);
     try {
       if (user.banned) {
         await adminUnbanUser({ data: { userId: user.id } });
       } else {
         await adminBanUser({ data: { userId: user.id } });
       }
-      queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });
+      await router.invalidate();
       setBanOpen(false);
     } catch (e) {
       toastManager.add({
@@ -77,6 +77,8 @@ export function UserActions() {
             : `Failed to ${user.banned ? 'unban' : 'ban'} user.`,
         type: 'error',
       });
+    } finally {
+      setBanning(false);
     }
   }
 
@@ -84,7 +86,7 @@ export function UserActions() {
     setSavingRole(true);
     try {
       await adminSetRole({ data: { userId: user.id, role } });
-      queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });
+      await router.invalidate();
     } catch (e) {
       toastManager.add({
         title: 'Error',
@@ -97,9 +99,10 @@ export function UserActions() {
   }
 
   async function handleDelete() {
+    setDeleting(true);
     try {
       await adminRemoveUser({ data: { userId: user.id } });
-      queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });
+      await router.invalidate();
       setDeleteOpen(false);
       navigate({ to: '/admin/users' });
     } catch (e) {
@@ -108,6 +111,8 @@ export function UserActions() {
         description: e instanceof Error ? e.message : 'Failed to delete user.',
         type: 'error',
       });
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -216,6 +221,7 @@ export function UserActions() {
             <Button
               variant={user.banned ? 'primary' : 'danger'}
               onClick={handleBanToggle}
+              progress={banning}
             >
               {user.banned ? 'Unban' : 'Ban'}
             </Button>
@@ -236,7 +242,7 @@ export function UserActions() {
           </AlertDialogBody>
           <AlertDialogFooter>
             <AlertDialogClose>Cancel</AlertDialogClose>
-            <Button variant="danger" onClick={handleDelete}>
+            <Button variant="danger" onClick={handleDelete} progress={deleting}>
               Delete
             </Button>
           </AlertDialogFooter>

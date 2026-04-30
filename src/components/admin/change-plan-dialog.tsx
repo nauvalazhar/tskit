@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { queryOptions, useQuery } from '@tanstack/react-query';
+import { useRouter } from '@tanstack/react-router';
 import {
   Dialog,
   DialogPopup,
@@ -19,9 +20,14 @@ import {
 } from '@/components/selia/select';
 import { Button } from '@/components/selia/button';
 import { adminChangePlan } from '@/functions/admin/subscriptions';
-import { adminPlansQuery } from '@/queries/admin/plans.queries';
+import { getAllPlans } from '@/functions/admin/plans';
 import type { PaymentChannel } from '@/config/payment';
 import { Badge } from '@/components/selia/badge';
+
+const plansQuery = queryOptions({
+  queryKey: ['admin', 'plans'],
+  queryFn: () => getAllPlans({ data: {} }),
+});
 
 export function ChangePlanDialog({
   open,
@@ -36,9 +42,9 @@ export function ChangePlanDialog({
   channel: PaymentChannel;
   currentPlanId: string;
 }) {
-  const queryClient = useQueryClient();
+  const router = useRouter();
   const { data: plans } = useQuery({
-    ...adminPlansQuery(),
+    ...plansQuery,
     enabled: open,
   });
   const [selectedPlan, setSelectedPlan] = useState<SelectItem | null>(null);
@@ -50,7 +56,7 @@ export function ChangePlanDialog({
     await adminChangePlan({
       data: { externalId, channel, newPlanId: selectedPlan.value },
     });
-    queryClient.invalidateQueries({ queryKey: ['admin', 'subscriptions'] });
+    await router.invalidate();
     setSaving(false);
     onOpenChange(false);
   }

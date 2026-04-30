@@ -10,7 +10,7 @@ import { TanStackDevtools } from '@tanstack/react-devtools';
 import { Toast } from '@/components/selia/toast';
 import { NotFound } from '@/components/shared/not-found';
 import { getSession } from '@/functions/auth';
-import { getActiveOrganization } from '@/functions/team';
+import { getActiveOrganization, getTeams } from '@/functions/team';
 import { getUserSettings } from '@/functions/settings';
 import type { Theme } from '@/lib/theme';
 import { pageTitle } from '@/lib/utils';
@@ -28,8 +28,10 @@ export const Route = createRootRouteWithContext<{
   beforeLoad: async () => {
     const session = await getSession();
     const settings = session ? await getUserSettings() : {};
-    const activeOrganization = session ? await getActiveOrganization() : null;
-    return { session, settings, activeOrganization };
+    const [activeOrganization, teams] = session
+      ? await Promise.all([getActiveOrganization(), getTeams()])
+      : [null, []];
+    return { session, settings, activeOrganization, teams: teams ?? [] };
   },
   head: () => ({
     meta: [

@@ -1,4 +1,3 @@
-import { useSuspenseQuery } from '@tanstack/react-query';
 import { getRouteApi, Link } from '@tanstack/react-router';
 import { Button } from '@/components/selia/button';
 import {
@@ -10,14 +9,12 @@ import {
 } from '@/components/selia/card';
 import { Badge } from '@/components/selia/badge';
 import { Item, ItemContent, ItemTitle, ItemDescription, ItemAction } from '@/components/selia/item';
-import { adminUserQuery } from '@/queries/admin/users.queries';
 import { getSubscriptionStatus } from '@/lib/utils';
 
 const routeApi = getRouteApi('/admin/users/$userId');
 
 export function UserSubscription() {
-  const { userId } = routeApi.useParams();
-  const user = useSuspenseQuery(adminUserQuery(userId)).data!;
+  const { user } = routeApi.useLoaderData();
 
   const subs = user.subscriptions ?? [];
 
@@ -33,9 +30,7 @@ export function UserSubscription() {
         {subs.length > 0 ? (
           <div className="space-y-3">
             {subs.map((sub) => {
-              const org = (sub as Record<string, unknown>).organization as
-                | { name: string }
-                | undefined;
+              const org = sub.organization;
               return (
                 <Item key={sub.id} size="sm">
                   <ItemContent>
