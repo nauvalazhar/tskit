@@ -4,6 +4,11 @@ A SaaS starter kit built on TanStack Start. Auth, billing, teams, admin, audit l
 
 Full documentation: [tskit.nauv.al](https://tskit.nauv.al)
 
+## Requirements
+
+- [Bun](https://bun.sh) v1.0 or later
+- [PostgreSQL](https://www.postgresql.org) database
+
 ## Quick start
 
 ```bash
